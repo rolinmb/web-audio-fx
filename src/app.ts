@@ -167,28 +167,6 @@ function unhideElements() {
     paramSliders[i].style.display = 'block';
   }
 
-  /*
-  document.getElementById('master-gain-view')!.style.display = 'block';
-  document.getElementById('master-gain-slider')!.style.display = 'block';
-  document.getElementById('compressor-threshold-view')!.style.display = 'block';
-  document.getElementById('compressor-threshold-slider')!.style.display = 'block';
-  document.getElementById('compressor-knee-view')!.style.display = 'block';
-  document.getElementById('compressor-knee-slider')!.style.display = 'block';
-  document.getElementById('compressor-ratio-view')!.style.display = 'block';
-  document.getElementById('compressor-ratio-slider')!.style.display = 'block';
-  document.getElementById('compressor-attack-view')!.style.display = 'block';
-  document.getElementById('compressor-attack-slider')!.style.display = 'block';
-  document.getElementById('compressor-release-view')!.style.display = 'block';
-  document.getElementById('compressor-release-slider')!.style.display = 'block';
-  document.getElementById('distortion-amount-view')!.style.display = 'block';
-  document.getElementById('distortion-amount-slider')!.style.display = 'block';
-  document.getElementById('delay-gain-view')!.style.display = 'block';
-  document.getElementById('delay-gain-slider')!.style.display = 'block';
-  document.getElementById('delay-time-view')!.style.display = 'block';
-  document.getElementById('delay-time-slider')!.style.display = 'block';
-  document.getElementById('pre-gain-view')!.style.display = 'block';
-  document.getElementById('pre-gain-slider')!.style.display = 'block';
-  */
   const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
   playPauseBtn.style.display = 'block';
   const scrubHeader = <HTMLHeadingElement> document.getElementById('scrub-info-header');
