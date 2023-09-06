@@ -1,6 +1,9 @@
 let audioCtx: AudioContext | undefined = undefined;
 let masterGain: GainNode | undefined = undefined;
+let compressor: DynamicsCompressorNode | undefined = undefined;
 let distNode: WaveShaperNode | undefined = undefined;
+let delayGain: GainNode | undefined = undefined;
+let delayNode: DelayNode | undefined = undefined;
 let preGain: GainNode | undefined = undefined;
 let audioElement: HTMLAudioElement | undefined = undefined;
 let paused: boolean = true;
@@ -10,6 +13,41 @@ document.getElementById('master-gain-slider')!.addEventListener('input', functio
   let val: number = slider.valueAsNumber;
   masterGain!.gain.setValueAtTime(val, audioCtx!.currentTime);
   document.getElementById('master-gain-view')!.innerHTML = 'Master Gain: '+val.toString();
+});
+
+document.getElementById('compressor-threshold-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  let val: number = slider.valueAsNumber;
+  compressor!.threshold.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('compressor-threshold-view')!.innerHTML = 'Compressor Threshold: '+val.toString();
+});
+
+document.getElementById('compressor-knee-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('compressor-knee-slider');
+  let val: number = slider.valueAsNumber;
+  compressor!.knee.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('compressor-knee-view')!.innerHTML = 'Compressor Knee: '+val.toString();
+});
+
+document.getElementById('compressor-ratio-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('compressor-ratio-slider');
+  let val: number = slider.valueAsNumber;
+  compressor!.ratio.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('compressor-ratio-view')!.innerHTML = 'Compressor Ratio: '+val.toString();
+});
+
+document.getElementById('compressor-attack-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('compressor-attack-slider');
+  let val: number = slider.valueAsNumber;
+  compressor!.attack.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('compressor-attack-view')!.innerHTML = 'Compressor Attack: '+val.toString();
+});
+
+document.getElementById('compressor-release-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('compressor-release-slider');
+  let val: number = slider.valueAsNumber;
+  compressor!.release.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('compressor-release-view')!.innerHTML = 'Compressor Release: '+val.toString();
 });
 
 function getDistortionCurve(amount: number): Float32Array {
@@ -30,6 +68,20 @@ document.getElementById('distortion-amount-slider')!.addEventListener('input', f
   document.getElementById('distortion-amount-view')!.innerHTML = 'Distortion Amount: '+val.toString();
 });
 
+document.getElementById('delay-gain-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('delay-gain-slider');
+  let val: number = slider.valueAsNumber;
+  delayGain!.gain.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('delay-gain-view')!.innerHTML = 'Delay Gain: '+val.toString();
+});
+
+document.getElementById('delay-time-slider')!.addEventListener('input', function() {
+  const slider = <HTMLInputElement> document.getElementById('delay-time-slider');
+  let val: number = slider.valueAsNumber;
+  delayNode!.delayTime.setValueAtTime(val, audioCtx!.currentTime);
+  document.getElementById('delay-time-view')!.innerHTML = 'Delay Time: '+val.toString()+ ' seconds';
+});
+
 document.getElementById('pre-gain-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('pre-gain-slider');
   let val: number = slider.valueAsNumber;
@@ -45,16 +97,44 @@ window.onload = function() {
   const masterGainSlider = <HTMLInputElement> document.getElementById('master-gain-slider');
   masterGainSlider.value = '1';
 
+  compressor = audioCtx.createDynamicsCompressor();
+  compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+  compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+  compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+  compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+  compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+  const compressorThresholdSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorThresholdSlider.value = '-50';
+  const compressorKneeSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorKneeSlider.value = '40';
+  const compressorRatioSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorRatioSlider.value = '12';
+  const compressorAttackSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorAttackSlider.value = '0';
+  const compressorReleaseSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorReleaseSlider.value = '0.25';
+
   distNode = audioCtx.createWaveShaper();
   distNode.curve = getDistortionCurve(0);
   distNode.oversample = <OverSampleType>'2x';
   const distSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
   distSlider.value = '0';
 
+  delayGain = audioCtx.createGain();
+  delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  const delayGainSlider = <HTMLInputElement> document.getElementById('delay-gain-slider');
+  delayGainSlider.value = '0';
+
+  delayNode = audioCtx.createDelay();
+  delayNode.delayTime.setValueAtTime(0.5, audioCtx.currentTime);
+  const delayTimeSlider = <HTMLInputElement> document.getElementById('delay-time-slider');
+  delayTimeSlider.value = '0.5';
+
   preGain = audioCtx.createGain();
-  preGain.gain.setValueAtTime(10, audioCtx.currentTime);
+  preGain.gain.setValueAtTime(5, audioCtx.currentTime);
   const preGainSlider = <HTMLInputElement> document.getElementById('pre-gain-slider');
-  preGainSlider.value = '10';
+  preGainSlider.value = '5';
 
   const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
   scrubInput.value = '0';
@@ -64,6 +144,35 @@ window.onload = function() {
   scrubInput.addEventListener('loadedmetadata', function() {
     scrubInput.value = '0';
   });
+}
+
+function unhideElements() {
+  const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
+  urlHeader.style.display = 'block';
+  document.getElementById('master-gain-view')!.style.display = 'block';
+  document.getElementById('master-gain-slider')!.style.display = 'block';
+  document.getElementById('compressor-threshold-view')!.style.display = 'block';
+  document.getElementById('compressor-threshold-slider')!.style.display = 'block';
+  document.getElementById('compressor-knee-view')!.style.display = 'block';
+  document.getElementById('compressor-knee-slider')!.style.display = 'block';
+  document.getElementById('compressor-ratio-view')!.style.display = 'block';
+  document.getElementById('compressor-ratio-slider')!.style.display = 'block';
+  document.getElementById('compressor-attack-view')!.style.display = 'block';
+  document.getElementById('compressor-attack-slider')!.style.display = 'block';
+  document.getElementById('compressor-release-view')!.style.display = 'block';
+  document.getElementById('compressor-release-slider')!.style.display = 'block';
+  document.getElementById('distortion-amount-view')!.style.display = 'block';
+  document.getElementById('distortion-amount-slider')!.style.display = 'block';
+  document.getElementById('delay-gain-view')!.style.display = 'block';
+  document.getElementById('delay-gain-slider')!.style.display = 'block';
+  document.getElementById('delay-time-view')!.style.display = 'block';
+  document.getElementById('delay-time-slider')!.style.display = 'block';
+  document.getElementById('pre-gain-view')!.style.display = 'block';
+  document.getElementById('pre-gain-slider')!.style.display = 'block';
+  const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
+  playPauseBtn.style.display = 'block';
+  const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
+  scrubInput.style.display = 'block';
 }
 
 function handleAudioUpload() {
@@ -86,21 +195,14 @@ function handleAudioUpload() {
     audioElement.src = audioWebUrl;
     audioElement.load();
     const audioSourceNode = audioCtx!.createMediaElementSource(audioElement); // FX routing for processing
-    audioSourceNode.connect(preGain!).connect(distNode!).connect(masterGain!).connect(audioCtx!.destination);
+    audioSourceNode.connect(preGain!);
+    preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!); // Parallel Delay Mix
+    preGain!.connect(distNode!); // Main Mix
+    distNode!.connect(masterGain!).connect(audioCtx!.destination); // Master Mix
     const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
     urlHeader.innerHTML = 'Current .mp3 File: '+audioFile.name;
-    if (urlHeader.style.display === 'none') { // Making hidden elements visible
-      urlHeader.style.display = 'block';
-      document.getElementById('master-gain-view')!.style.display = 'block';
-      document.getElementById('master-gain-slider')!.style.display = 'block';
-      document.getElementById('distortion-amount-view')!.style.display = 'block';
-      document.getElementById('distortion-amount-slider')!.style.display = 'block';
-      document.getElementById('pre-gain-view')!.style.display = 'block';
-      document.getElementById('pre-gain-slider')!.style.display = 'block';
-      const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
-      playPauseBtn.style.display = 'block';
-      const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
-      scrubInput.style.display = 'block';
+    if (urlHeader.style.display === 'none') {
+      unhideElements();
     }
   } else {
     alert('Please select a .mp3 file to edit.');

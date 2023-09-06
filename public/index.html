@@ -19,12 +19,22 @@
         <input id="distortion-amount-slider" class="fx-slider" type="range" min="0" max="500" step="1" value="0" style="display: none" />
       </div>
       <div class="param-wrap">
-        <h4 id="pre-gain-view" class="fx-slider-view" style="display: none">Pre Gain: 10</h4>
-        <input id="pre-gain-slider" class="fx-slider" type="range" min="0" max="10" step="0.1" value="10" style="display: none" />
+        <h4 id="delay-gain-view" class="fx-slider-view" style="display: none">Delay Gain: 0</h4>
+        <input id="delay-gain-slider" class="fx-slider" type="range" min="0" max="10" step="0.1" value="0" style="display: none" />
+      </div>
+      <div class="param-wrap">
+        <h4 id="delay-time-view" class="fx-slider-view" style="display: none">Delay Time: 0.5 seconds</h4>
+        <input id="delay-time-slider" class="fx-slider" type="range" min="0" max="2.5" step="0.05" value="0.5" style="display: none" />
+      </div>
+      <div class="param-wrap">
+        <h4 id="pre-gain-view" class="fx-slider-view" style="display: none">Pre Gain: 5</h4>
+        <input id="pre-gain-slider" class="fx-slider" type="range" min="0" max="10" step="0.1" value="5" style="display: none" />
       </div>
     </div>
+    <br />
     <button id="play-pause-btn" onclick="handlePlayPause()" style="display: none">Play .mp3</button>
-    <input id="audio-scrub-input" style="display: none" type="range" value="0" />
+    <br />
+    <input id="audio-scrub-input" style="display: none" type="range" value="0" style="width: 800px" />
   </body>
   <script src="../dist/app.js"></script>
 </html>
