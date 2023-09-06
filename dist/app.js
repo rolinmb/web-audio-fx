@@ -2,6 +2,8 @@
 let audioCtx = undefined;
 let masterGain = undefined;
 let compressor = undefined;
+let lowPass = undefined;
+let highPass = undefined;
 let distNode = undefined;
 let delayGain = undefined;
 let delayNode = undefined;
@@ -43,6 +45,18 @@ document.getElementById('compressor-release-slider').addEventListener('input', f
     let val = slider.valueAsNumber;
     compressor.release.setValueAtTime(val, audioCtx.currentTime);
     document.getElementById('compressor-release-view').innerHTML = 'Compressor Release: ' + val.toString() + ' db';
+});
+document.getElementById('low-pass-slider').addEventListener('input', function () {
+    const slider = document.getElementById('low-pass-slider');
+    let val = slider.valueAsNumber;
+    lowPass.frequency.setValueAtTime(val, audioCtx.currentTime);
+    document.getElementById('low-pass-view').innerHTML = 'Low Pass Cutoff';
+});
+document.getElementById('high-pass-slider').addEventListener('input', function () {
+    const slider = document.getElementById('high-pass-slider');
+    let val = slider.valueAsNumber;
+    highPass.frequency.setValueAtTime(val, audioCtx.currentTime);
+    document.getElementById('high-pass-view').innerHTML = 'High Pass Cutoff';
 });
 function getDistortionCurve(amount, tone) {
     const k = typeof amount === 'number' ? amount : 50;
@@ -149,6 +163,16 @@ window.onload = function () {
     compressorAttackSlider.value = '0';
     const compressorReleaseSlider = document.getElementById('compressor-release-slider');
     compressorReleaseSlider.value = '0.25';
+    lowPass = audioCtx.createBiquadFilter();
+    lowPass.type = 'lowpass';
+    lowPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    const lowPassSlider = document.getElementById('low-pass-slider');
+    lowPassSlider.value = '1000';
+    highPass = audioCtx.createBiquadFilter();
+    highPass.type = 'highpass';
+    highPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    const highPassSlider = document.getElementById('high-pass-slider');
+    highPassSlider.value = '1000';
     distNode = audioCtx.createWaveShaper();
     distNode.curve = getDistortionCurve(0, 0.5);
     distNode.oversample = '2x';
@@ -235,7 +259,7 @@ function handleAudioUpload() {
         audioSourceNode.connect(preGain);
         preGain.connect(delayNode).connect(delayGain).connect(distNode);
         preGain.connect(distNode);
-        distNode.connect(masterGain).connect(audioCtx.destination);
+        distNode.connect(highPass).connect(lowPass).connect(compressor).connect(masterGain).connect(audioCtx.destination);
         const urlHeader = document.getElementById('audio-url-header');
         urlHeader.innerHTML = 'Current .mp3 File: ' + audioFile.name;
         if (urlHeader.style.display === 'none') {
