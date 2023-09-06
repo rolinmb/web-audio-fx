@@ -50,13 +50,13 @@ document.getElementById('low-pass-slider').addEventListener('input', function ()
     const slider = document.getElementById('low-pass-slider');
     let val = slider.valueAsNumber;
     lowPass.frequency.setValueAtTime(val, audioCtx.currentTime);
-    document.getElementById('low-pass-view').innerHTML = 'Low Pass Cutoff';
+    document.getElementById('low-pass-view').innerHTML = 'Low Pass Cutoff: ' + val.toString() + ' Hz';
 });
 document.getElementById('high-pass-slider').addEventListener('input', function () {
     const slider = document.getElementById('high-pass-slider');
     let val = slider.valueAsNumber;
     highPass.frequency.setValueAtTime(val, audioCtx.currentTime);
-    document.getElementById('high-pass-view').innerHTML = 'High Pass Cutoff';
+    document.getElementById('high-pass-view').innerHTML = 'High Pass Cutoff: ' + val.toString() + ' Hz';
 });
 function getDistortionCurve(amount, tone) {
     const k = typeof amount === 'number' ? amount : 50;
