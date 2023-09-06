@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-
+    <link rel="stylesheet" href="index.css">
   </head>
   <body>
     <h2 id="input-header">Add Audio FX To MP3 Files</h2>
@@ -53,7 +53,7 @@
     </div>
     <br />
     <button id="play-pause-btn" onclick="handlePlayPause()" style="display: none">Play .mp3</button>
-    <h4>Drag to move around your audio:</h4>
+    <h4 id="scrub-info-header" style="display: none">Drag to move around your audio:</h4>
     <input id="audio-scrub-input" style="display: none" type="range" value="0" style="width: 800px" />
   </body>
   <script src="../dist/app.js"></script>

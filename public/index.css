@@ -1,0 +1,11 @@
+#fx-sliders-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-gap: 10px;
+}
+
+.param-wrap {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: center;
+}

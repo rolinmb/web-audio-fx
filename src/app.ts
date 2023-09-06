@@ -144,6 +144,11 @@ window.onload = function() {
   scrubInput.addEventListener('loadedmetadata', function() {
     scrubInput.value = '0';
   });
+
+  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
+  for (let i = 0; i < paramWraps.length; i++) {
+    paramWraps[i].style.display = 'none';
+  }
 }
 
 function unhideElements() {
@@ -171,8 +176,14 @@ function unhideElements() {
   document.getElementById('pre-gain-slider')!.style.display = 'block';
   const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
   playPauseBtn.style.display = 'block';
+  const scrubHeader = <HTMLHeadingElement> document.getElementById('scrub-info-header');
+  scrubHeader.style.display = 'block';
   const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
   scrubInput.style.display = 'block';
+  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
+  for (let i = 0; i < paramWraps.length; i++) {
+    paramWraps[i].style.display = 'block';
+  }
 }
 
 function handleAudioUpload() {
