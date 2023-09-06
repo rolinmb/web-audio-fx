@@ -1,6 +1,7 @@
-var audioCtx: AudioContext | undefined = undefined;
-var distNode: WaveShaperNode | undefined = undefined;
-var paused: boolean = true;
+let audioCtx: AudioContext | undefined = undefined;
+let distNode: WaveShaperNode | undefined = undefined;
+let audioElement: HTMLAudioElement | undefined = undefined;
+let paused: boolean = true;
 
 function getDistortionCurve(amount: number): Float32Array {
   const k: number = typeof amount === 'number' ? amount : 50;
@@ -18,6 +19,14 @@ window.onload = function() {
   distNode = audioCtx.createWaveShaper();
   distNode.curve = getDistortionCurve(0);
   distNode.oversample = <OverSampleType>'2x';
+  const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
+  scrubInput.value = '0';
+  scrubInput.addEventListener('input', function() {
+    audioElement!.currentTime = parseFloat(scrubInput.value);
+  });
+  scrubInput.addEventListener('loadedmetadata', function() {
+    scrubInput.value = '0';
+  });
 }
 
 function handleAudioUpload() {
@@ -41,15 +50,25 @@ function handleAudioUpload() {
       urlHeader.style.display = 'block';
     }
     const audioWebUrl = URL.createObjectURL(audioFile);
-    const audioElement = <HTMLAudioElement> document.getElementById('main-audio');
+    audioElement = <HTMLAudioElement> document.getElementById('main-audio');
     audioElement.src = audioWebUrl;
     audioElement.load();
+    const audioSourceNode = audioCtx!.createMediaElementSource(audioElement); // setting up FX routing for processing
+    audioSourceNode.connect(distNode!);
+    distNode!.connect(audioCtx!.destination);
     const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
     playPauseBtn.style.display = 'block';
+    const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
+    scrubInput.style.display = 'block';
   } else {
     alert('Please select a .mp3 file to edit.');
     audioFileInput.value = '';
   }
+}
+
+function updateScrubInput() {
+  const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
+  scrubInput.value = audioElement!.currentTime.toString();
 }
 
 function handlePlayPause() {
@@ -62,9 +81,20 @@ function handlePlayPause() {
   if (paused) {
     playPauseBtn.innerHTML = 'Pause .mp3';
     audioElement.play();
+    const scrubInterval = setInterval(updateScrubInput, 100);
+    audioElement.addEventListener('ended', function() {
+      clearInterval(scrubInterval);
+    });
   } else {
     playPauseBtn.innerHTML = 'Play .mp3';
     audioElement.pause();
   }
   paused = !paused;
 }
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === ' ') {
+    event.preventDefault();
+    handlePlayPause();
+  }
+});
