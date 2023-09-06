@@ -12,42 +12,42 @@ document.getElementById('master-gain-slider')!.addEventListener('input', functio
   const slider = <HTMLInputElement> document.getElementById('master-gain-slider');
   let val: number = slider.valueAsNumber;
   masterGain!.gain.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('master-gain-view')!.innerHTML = 'Master Gain: '+val.toString();
+  document.getElementById('master-gain-view')!.innerHTML = 'Master Gain: '+val.toString()+' db';
 });
 
 document.getElementById('compressor-threshold-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
   let val: number = slider.valueAsNumber;
   compressor!.threshold.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('compressor-threshold-view')!.innerHTML = 'Compressor Threshold: '+val.toString();
+  document.getElementById('compressor-threshold-view')!.innerHTML = 'Compressor Threshold: '+val.toString()+' db';
 });
 
 document.getElementById('compressor-knee-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('compressor-knee-slider');
   let val: number = slider.valueAsNumber;
   compressor!.knee.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('compressor-knee-view')!.innerHTML = 'Compressor Knee: '+val.toString();
+  document.getElementById('compressor-knee-view')!.innerHTML = 'Compressor Knee: '+val.toString()+' db';
 });
 
 document.getElementById('compressor-ratio-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('compressor-ratio-slider');
   let val: number = slider.valueAsNumber;
   compressor!.ratio.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('compressor-ratio-view')!.innerHTML = 'Compressor Ratio: '+val.toString();
+  document.getElementById('compressor-ratio-view')!.innerHTML = 'Compressor Ratio: '+val.toString()+':1';
 });
 
 document.getElementById('compressor-attack-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('compressor-attack-slider');
   let val: number = slider.valueAsNumber;
   compressor!.attack.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('compressor-attack-view')!.innerHTML = 'Compressor Attack: '+val.toString();
+  document.getElementById('compressor-attack-view')!.innerHTML = 'Compressor Attack: '+val.toString()+' seconds';
 });
 
 document.getElementById('compressor-release-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('compressor-release-slider');
   let val: number = slider.valueAsNumber;
   compressor!.release.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('compressor-release-view')!.innerHTML = 'Compressor Release: '+val.toString();
+  document.getElementById('compressor-release-view')!.innerHTML = 'Compressor Release: '+val.toString()+' db';
 });
 
 function getDistortionCurve(amount: number): Float32Array {
@@ -72,7 +72,7 @@ document.getElementById('delay-gain-slider')!.addEventListener('input', function
   const slider = <HTMLInputElement> document.getElementById('delay-gain-slider');
   let val: number = slider.valueAsNumber;
   delayGain!.gain.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('delay-gain-view')!.innerHTML = 'Delay Gain: '+val.toString();
+  document.getElementById('delay-gain-view')!.innerHTML = 'Delay Gain: '+val.toString()+' db';
 });
 
 document.getElementById('delay-time-slider')!.addEventListener('input', function() {
@@ -86,7 +86,7 @@ document.getElementById('pre-gain-slider')!.addEventListener('input', function()
   const slider = <HTMLInputElement> document.getElementById('pre-gain-slider');
   let val: number = slider.valueAsNumber;
   preGain!.gain.setValueAtTime(val, audioCtx!.currentTime);
-  document.getElementById('pre-gain-view')!.innerHTML = "Pre Gain: "+val.toString();
+  document.getElementById('pre-gain-view')!.innerHTML = "Pre Gain: "+val.toString()+' db';
 });
 
 window.onload = function() {
@@ -106,13 +106,13 @@ window.onload = function() {
 
   const compressorThresholdSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
   compressorThresholdSlider.value = '-50';
-  const compressorKneeSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  const compressorKneeSlider = <HTMLInputElement> document.getElementById('compressor-knee-slider');
   compressorKneeSlider.value = '40';
-  const compressorRatioSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  const compressorRatioSlider = <HTMLInputElement> document.getElementById('compressor-ratio-slider');
   compressorRatioSlider.value = '12';
-  const compressorAttackSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  const compressorAttackSlider = <HTMLInputElement> document.getElementById('compressor-attack-slider');
   compressorAttackSlider.value = '0';
-  const compressorReleaseSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  const compressorReleaseSlider = <HTMLInputElement> document.getElementById('compressor-release-slider');
   compressorReleaseSlider.value = '0.25';
 
   distNode = audioCtx.createWaveShaper();
@@ -127,9 +127,9 @@ window.onload = function() {
   delayGainSlider.value = '0';
 
   delayNode = audioCtx.createDelay();
-  delayNode.delayTime.setValueAtTime(0.5, audioCtx.currentTime);
+  delayNode.delayTime.setValueAtTime(0.25, audioCtx.currentTime);
   const delayTimeSlider = <HTMLInputElement> document.getElementById('delay-time-slider');
-  delayTimeSlider.value = '0.5';
+  delayTimeSlider.value = '0.25';
 
   preGain = audioCtx.createGain();
   preGain.gain.setValueAtTime(5, audioCtx.currentTime);
