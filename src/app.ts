@@ -50,22 +50,34 @@ document.getElementById('compressor-release-slider')!.addEventListener('input', 
   document.getElementById('compressor-release-view')!.innerHTML = 'Compressor Release: '+val.toString()+' db';
 });
 
-function getDistortionCurve(amount: number): Float32Array {
+function getDistortionCurve(amount: number, tone: number): Float32Array {
   const k: number = typeof amount === 'number' ? amount : 50;
   const n_samples: number = 44100;
   const curve: Float32Array = new Float32Array(n_samples);
   for (let i = 0; i < n_samples; i++) {
     const x: number = (i * 2) / n_samples - 1;
-    curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / (Math.PI + k * Math.abs(x));
+    curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / ((Math.PI + k * Math.abs(x)) * (1 + tone));
+    // curve[i] = Math.tanh(x * (k * Math.sin(x * tone)));
   }
   return curve;
 }
 
+function updateDistortion() {
+  const amountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
+  let amountVal: number = amountSlider.valueAsNumber;
+  const toneSlider = <HTMLInputElement> document.getElementById('disortion-tone-slider')
+  let toneVal: number = toneSlider.valueAsNumber;
+  distNode!.curve = getDistortionCurve(amountVal, toneVal);
+  document.getElementById('distortion-amount-view')!.innerHTML = 'Distortion Amount: '+amountVal.toString();
+  document.getElementById('distortion-tone-view')!.innerHTML = 'Distortion Tone: '+toneVal.toString();
+}
+
 document.getElementById('distortion-amount-slider')!.addEventListener('input', function() {
-  const slider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
-  let val: number = slider.valueAsNumber;
-  distNode!.curve = getDistortionCurve(val);
-  document.getElementById('distortion-amount-view')!.innerHTML = 'Distortion Amount: '+val.toString();
+  updateDistortion();
+});
+
+document.getElementById('disortion-tone-slider')!.addEventListener('input', function() {
+  updateDistortion();
 });
 
 document.getElementById('delay-gain-slider')!.addEventListener('input', function() {
@@ -116,10 +128,13 @@ window.onload = function() {
   compressorReleaseSlider.value = '0.25';
 
   distNode = audioCtx.createWaveShaper();
-  distNode.curve = getDistortionCurve(0);
+  distNode.curve = getDistortionCurve(0, 0.5);
   distNode.oversample = <OverSampleType>'2x';
-  const distSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
-  distSlider.value = '0';
+  const distAmountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
+  distAmountSlider.value = '0';
+
+  const distToneSlider = <HTMLInputElement> document.getElementById('disortion-tone-slider');
+  distToneSlider.value = '5';
 
   delayGain = audioCtx.createGain();
   delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
