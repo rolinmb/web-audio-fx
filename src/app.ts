@@ -194,11 +194,11 @@ function handleAudioUpload() {
     audioElement = <HTMLAudioElement> document.getElementById('main-audio');
     audioElement.src = audioWebUrl;
     audioElement.load();
-    const audioSourceNode = audioCtx!.createMediaElementSource(audioElement); // FX routing for processing
-    audioSourceNode.connect(preGain!);
-    preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!); // Parallel Delay Mix
-    preGain!.connect(distNode!); // Main Mix
-    distNode!.connect(masterGain!).connect(audioCtx!.destination); // Master Mix
+    const audioSourceNode = audioCtx!.createMediaElementSource(audioElement);
+    audioSourceNode.connect(preGain!);                                   // Dry
+    preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!); // "Wet"
+    preGain!.connect(distNode!);                                         // "Dry"
+    distNode!.connect(masterGain!).connect(audioCtx!.destination);       // Master Gain = Master Bus / Mix
     const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
     urlHeader.innerHTML = 'Current .mp3 File: '+audioFile.name;
     if (urlHeader.style.display === 'none') {
