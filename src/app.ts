@@ -146,14 +146,28 @@ window.onload = function() {
   });
 
   const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
-  for (let i = 0; i < paramWraps.length; i++) {
+  const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
+  const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
+  for (let i = 0; i < paramViews.length; i++) {
     paramWraps[i].style.display = 'none';
+    paramViews[i].style.display = 'none';
+    paramSliders[i].style.display = 'none';
   }
 }
 
 function unhideElements() {
   const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
   urlHeader.style.display = 'block';
+  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
+  const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
+  const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
+  for (let i = 0; i < paramViews.length; i++) {
+    paramWraps[i].style.display = 'block';
+    paramViews[i].style.display = 'block';
+    paramSliders[i].style.display = 'block';
+  }
+
+  /*
   document.getElementById('master-gain-view')!.style.display = 'block';
   document.getElementById('master-gain-slider')!.style.display = 'block';
   document.getElementById('compressor-threshold-view')!.style.display = 'block';
@@ -174,16 +188,13 @@ function unhideElements() {
   document.getElementById('delay-time-slider')!.style.display = 'block';
   document.getElementById('pre-gain-view')!.style.display = 'block';
   document.getElementById('pre-gain-slider')!.style.display = 'block';
+  */
   const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
   playPauseBtn.style.display = 'block';
   const scrubHeader = <HTMLHeadingElement> document.getElementById('scrub-info-header');
   scrubHeader.style.display = 'block';
   const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
   scrubInput.style.display = 'block';
-  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
-  for (let i = 0; i < paramWraps.length; i++) {
-    paramWraps[i].style.display = 'block';
-  }
 }
 
 function handleAudioUpload() {
