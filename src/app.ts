@@ -54,18 +54,48 @@ function getDistortionCurve(amount: number, tone: number): Float32Array {
   const k: number = typeof amount === 'number' ? amount : 50;
   const n_samples: number = 44100;
   const curve: Float32Array = new Float32Array(n_samples);
-  for (let i = 0; i < n_samples; i++) {
-    const x: number = (i * 2) / n_samples - 1;
-    curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / ((Math.PI + k * Math.abs(x)) * (1 + tone));
-    // curve[i] = Math.tanh(x * (k * Math.sin(x * tone)));
+  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
+  let distortionType: string = distortionSelect.value;
+  switch (distortionType) {
+    case 'default':
+      for (let i = 0; i < n_samples; i++) {
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / ((Math.PI + k * Math.abs(x)) * (1 + tone));
+      }
+      break;
+    case 'hardclip':
+      for (let i = 0; i < n_samples; i++) {
+
+      }
+      break;
+    case 'softclip':
+      for (let i = 0; i < n_samples; i++) {
+
+      }
+    case 'exponential':
+      for (let i = 0; i < n_samples; i++) {
+
+      }
+      break;
+    case 'arctan':
+      for (let i = 0; i < n_samples; i++) {
+
+      }
+    default:
+      for (let i = 0; i < n_samples; i++) {
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / ((Math.PI + k * Math.abs(x)) * (1 + tone));
+      }
+      break;
   }
+  
   return curve;
 }
 
 function updateDistortion() {
   const amountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
   let amountVal: number = amountSlider.valueAsNumber;
-  const toneSlider = <HTMLInputElement> document.getElementById('disortion-tone-slider')
+  const toneSlider = <HTMLInputElement> document.getElementById('distortion-tone-slider')
   let toneVal: number = toneSlider.valueAsNumber;
   distNode!.curve = getDistortionCurve(amountVal, toneVal);
   document.getElementById('distortion-amount-view')!.innerHTML = 'Distortion Amount: '+amountVal.toString();
@@ -76,8 +106,14 @@ document.getElementById('distortion-amount-slider')!.addEventListener('input', f
   updateDistortion();
 });
 
-document.getElementById('disortion-tone-slider')!.addEventListener('input', function() {
+document.getElementById('distortion-tone-slider')!.addEventListener('input', function() {
   updateDistortion();
+});
+
+document.getElementById('distortion-type-select')!.addEventListener('change', function() {
+  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
+  let distortionType: string = distortionSelect.value;
+  document.getElementById('distortion-type-view')!.innerHTML = "Distortion Type: "+distortionType;
 });
 
 document.getElementById('delay-gain-slider')!.addEventListener('input', function() {
@@ -133,8 +169,11 @@ window.onload = function() {
   const distAmountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
   distAmountSlider.value = '0';
 
-  const distToneSlider = <HTMLInputElement> document.getElementById('disortion-tone-slider');
+  const distToneSlider = <HTMLInputElement> document.getElementById('distortion-tone-slider');
   distToneSlider.value = '5';
+
+  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
+  distortionSelect.style.display = 'none';
 
   delayGain = audioCtx.createGain();
   delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
@@ -163,10 +202,12 @@ window.onload = function() {
   const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
   const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
   const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
-  for (let i = 0; i < paramViews.length; i++) {
+  for (let i = 0; i < paramWraps.length; i++) {
     paramWraps[i].style.display = 'none';
-    paramViews[i].style.display = 'none';
-    paramSliders[i].style.display = 'none';
+    if (i < paramWraps.length - 1) {
+      paramViews[i].style.display = 'none';
+      paramSliders[i].style.display = 'none';
+    }
   }
 }
 
@@ -176,12 +217,15 @@ function unhideElements() {
   const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
   const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
   const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
-  for (let i = 0; i < paramViews.length; i++) {
+  for (let i = 0; i < paramWraps.length; i++) {
     paramWraps[i].style.display = 'block';
-    paramViews[i].style.display = 'block';
-    paramSliders[i].style.display = 'block';
+    if (i < paramWraps.length - 1) {
+      paramViews[i].style.display = 'block';
+      paramSliders[i].style.display = 'block';
+    }
   }
-
+  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
+  distortionSelect.style.display = 'block';
   const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
   playPauseBtn.style.display = 'block';
   const scrubHeader = <HTMLHeadingElement> document.getElementById('scrub-info-header');
