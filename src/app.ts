@@ -265,6 +265,8 @@ function unhideElements() {
   scrubHeader.style.display = 'block';
   const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
   scrubInput.style.display = 'block';
+  const renderBtn = <HTMLButtonElement> document.getElementById('render-audio-btn');
+  renderBtn.style.display = 'block';
 }
 
 function handleAudioUpload() {
@@ -326,6 +328,45 @@ function handlePlayPause() {
     audioElement.pause();
   }
   paused = !paused;
+}
+
+function handleRenderAudio() {
+  const offlineCtx = new OfflineAudioContext(2, audioElement!.duration * audioCtx!.sampleRate, audioCtx!.sampleRate);
+  const renderingSource = audioCtx!.createMediaElementSource(audioElement!);
+  renderingSource.connect(preGain!);
+  preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!);
+  preGain!.connect(distNode!);
+  distNode!.connect(highPass!).connect(lowPass!).connect(compressor!).connect(masterGain!).connect(offlineCtx.destination);
+  audioElement!.currentTime = 0;
+  audioElement!.play();
+  offlineCtx.startRendering().then((renderedBuffer) => {
+    // TODO
+  });
+
+  /*
+  const downloadDest = audioCtx!.createMediaStreamDestination();
+  const recorder = new MediaRecorder(downloadDest.stream);
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) {
+      chunks.push(e.data)
+    }
+  };
+  recorder.onstop = () => {
+    const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
+    const downloadLink = <HTMLLinkElement> document.getElementById('rendered-audio-link');
+    downloadLink.href = URL.createObjectURL(audioBlob);
+    downloadLink.setAttribute('download', 'rendered_audio.mp3');
+    downloadLink.style.display = 'block';
+  };
+  const downloadSourceNode = audioCtx!.createMediaElementSource(audioElement!);
+  downloadSourceNode.connect(downloadDest);
+  recorder.start();
+  audioElement!.play();
+  setTimeout(() => {
+    recorder.stop();
+    audioElement!.pause();
+  }, audioElement!.duration * 1000);*/
 }
 
 document.addEventListener('keydown', function(event) {

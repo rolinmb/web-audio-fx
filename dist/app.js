@@ -234,6 +234,8 @@ function unhideElements() {
     scrubHeader.style.display = 'block';
     const scrubInput = document.getElementById('audio-scrub-input');
     scrubInput.style.display = 'block';
+    const renderBtn = document.getElementById('render-audio-btn');
+    renderBtn.style.display = 'block';
 }
 function handleAudioUpload() {
     const uploadBtn = document.getElementById('audio-upload-btn');
@@ -295,6 +297,30 @@ function handlePlayPause() {
         audioElement.pause();
     }
     paused = !paused;
+}
+function handleRenderAudio() {
+    const downloadDest = audioCtx.createMediaStreamDestination();
+    const recorder = new MediaRecorder(downloadDest.stream);
+    const chunks = [];
+    recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+            chunks.push(e.data);
+        }
+    };
+    recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
+        const downloadLink = document.getElementById('rendered-audio-link');
+        downloadLink.href = URL.createObjectURL(audioBlob);
+        downloadLink.setAttribute('download', 'rendered_audio.mp3');
+    };
+    const downloadSourceNode = audioCtx.createMediaElementSource(audioElement);
+    downloadSourceNode.connect(downloadDest);
+    recorder.start();
+    audioElement.play();
+    setTimeout(() => {
+        recorder.stop();
+        audioElement.pause();
+    }, audioElement.duration * 1000);
 }
 document.addEventListener('keydown', function (event) {
     if (event.key === ' ') {
