@@ -5,12 +5,26 @@
   </head>
   <body>
     <h2 id="input-header">Add Audio FX To MP3 Files</h2>
-    <input id="audio-file-input" type="file" accept="audio/.mp3" placeholder="select a .mp3 audio file" />
+    <input id="audio-file-input" type="file" accept=".mp3" placeholder="select a .mp3 audio file" />
     <button id="audio-upload-btn" onclick="handleAudioUpload()">Upload .mp3 file</button>
     <audio id="main-audio" style="display: none"></audio>
     <h2 id="audio-url-header" style="display: none"></h2>
+    <div id="fx-sliders-container">
+      <div class="param-wrap">
+        <h4 id="master-gain-view" class="fx-slider-view" style="display: none">Master Gain: 1</h4>
+        <input id="master-gain-slider" class="fx-slider" type="range" min="0" max="10" step="0.1" value="1" style="display: none" />
+      </div>
+      <div class="param-wrap">
+        <h4 id="distortion-amount-view" class="fx-sider-view" style="display: none">Distortion Amount: 0</h4>
+        <input id="distortion-amount-slider" class="fx-slider" type="range" min="0" max="500" step="1" value="0" style="display: none" />
+      </div>
+      <div class="param-wrap">
+        <h4 id="pre-gain-view" class="fx-slider-view" style="display: none">Pre Gain: 10</h4>
+        <input id="pre-gain-slider" class="fx-slider" type="range" min="0" max="10" step="0.1" value="10" style="display: none" />
+      </div>
+    </div>
     <button id="play-pause-btn" onclick="handlePlayPause()" style="display: none">Play .mp3</button>
-    <input id="audio-scrub-input" style="display: none" type="range" value="0"/>
+    <input id="audio-scrub-input" style="display: none" type="range" value="0" />
   </body>
   <script src="../dist/app.js"></script>
 </html>
