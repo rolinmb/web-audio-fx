@@ -65,21 +65,25 @@ function getDistortionCurve(amount: number, tone: number): Float32Array {
       break;
     case 'hardclip':
       for (let i = 0; i < n_samples; i++) {
-
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = Math.min(1, Math.max(-1, x * k));
       }
       break;
     case 'softclip':
       for (let i = 0; i < n_samples; i++) {
-
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = Math.tanh(x * k);
       }
     case 'exponential':
       for (let i = 0; i < n_samples; i++) {
-
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = Math.pow(Math.abs(x), k) * (x >= 0 ? 1 : -1);
       }
       break;
     case 'arctan':
       for (let i = 0; i < n_samples; i++) {
-
+        const x: number = (i * 2) / n_samples - 1;
+        curve[i] = (2 / Math.PI) * Math.atan(x * k);
       }
     default:
       for (let i = 0; i < n_samples; i++) {
@@ -114,6 +118,7 @@ document.getElementById('distortion-type-select')!.addEventListener('change', fu
   const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
   let distortionType: string = distortionSelect.value;
   document.getElementById('distortion-type-view')!.innerHTML = "Distortion Type: "+distortionType;
+  updateDistortion();
 });
 
 document.getElementById('delay-gain-slider')!.addEventListener('input', function() {
@@ -186,9 +191,9 @@ window.onload = function() {
   delayTimeSlider.value = '0.25';
 
   preGain = audioCtx.createGain();
-  preGain.gain.setValueAtTime(5, audioCtx.currentTime);
+  preGain.gain.setValueAtTime(2, audioCtx.currentTime);
   const preGainSlider = <HTMLInputElement> document.getElementById('pre-gain-slider');
-  preGainSlider.value = '5';
+  preGainSlider.value = '2';
 
   const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
   scrubInput.value = '0';
