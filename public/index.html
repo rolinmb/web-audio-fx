@@ -4,9 +4,12 @@
 
   </head>
   <body>
+    <h2 id="input-header">Add Audio FX To MP3 Files</h2>
     <input id="audio-file-input" type="file" accept="audio/.mp3" placeholder="select a .mp3 audio file"/>
-    <button class="id" onclick="handleAudioUpload()">Upload .mp3 file</button>
+    <button id="audio-upload-btn" onclick="handleAudioUpload()">Upload .mp3 file</button>
     <audio id="main-audio" style="display: none"></audio>
+    <h2 id="audio-url-header" style="display: none"></h2>
+    <canvas id="audio-waveform-view" style="display: none"></canvas>
     <button id="play-pause-btn" onclick="handlePlayPause()" style="display: none">Play .mp3</button>
   </body>
   <script src="../dist/app.js"></script>
