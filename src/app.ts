@@ -91,6 +91,7 @@ function getDistortionCurve(amount: number, tone: number): Float32Array {
         const x: number = (i * 2) / n_samples - 1;
         curve[i] = Math.tanh(x * k);
       }
+      break;
     case 'exponential':
       for (let i = 0; i < n_samples; i++) {
         const x: number = (i * 2) / n_samples - 1;
@@ -102,6 +103,7 @@ function getDistortionCurve(amount: number, tone: number): Float32Array {
         const x: number = (i * 2) / n_samples - 1;
         curve[i] = (2 / Math.PI) * Math.atan(x * k);
       }
+      break;
     default:
       for (let i = 0; i < n_samples; i++) {
         const x: number = (i * 2) / n_samples - 1;
@@ -272,15 +274,15 @@ function unhideElements() {
 
 function handleAudioUpload() {
   const uploadBtn = <HTMLButtonElement> document.getElementById('audio-upload-btn');
-  uploadBtn.innerHTML = 'Upload new .mp3';
+  uploadBtn.innerHTML = 'Upload new .wav';
   const audioFileInput = <HTMLInputElement> document.getElementById('audio-file-input'); 
   if (audioFileInput && audioFileInput.files && audioFileInput.files.length > 0) {
     if (audioFileInput.files.length > 1) {
-      alert('Please select only one .mp3 file to edit.');
+      alert('Please select only one .wav file to edit.');
       audioFileInput.value = '';
       return;
-    } else if (!audioFileInput.files[0].name.endsWith('.mp3')) {
-      alert('Please select only .mp3 files to edit.');
+    } else if (!audioFileInput.files[0].name.endsWith('.wav')) {
+      alert('Please select only .wav files to edit.');
       audioFileInput.value = '';
       return;
     }
@@ -295,12 +297,12 @@ function handleAudioUpload() {
     preGain!.connect(distNode!);
     distNode!.connect(highPass!).connect(lowPass!).connect(compressor!).connect(masterGain!).connect(audioCtx!.destination);
     const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
-    urlHeader.innerHTML = 'Current .mp3 File: '+audioFile.name;
+    urlHeader.innerHTML = 'Current .wav File: '+audioFile.name;
     if (urlHeader.style.display === 'none') {
       unhideElements();
     }
   } else {
-    alert('Please select a .mp3 file to edit.');
+    alert('Please select a .wav file to edit.');
     audioFileInput.value = '';
   }
 }
@@ -314,18 +316,18 @@ function handlePlayPause() {
   const playPauseBtn = <HTMLButtonElement> document.getElementById('play-pause-btn');
   const audioElement = <HTMLAudioElement> document.getElementById('main-audio');
   if ((audioElement && (!audioElement.src || audioElement.src === '')) || playPauseBtn.style.display === 'none') {
-    alert('Cannot play/pause audio if no .mp3 file is selected.');
+    alert('Cannot play/pause audio if no .wav file is selected.');
     return;
   }
   if (paused) {
-    playPauseBtn.innerHTML = 'Pause .mp3';
+    playPauseBtn.innerHTML = 'Pause .wav';
     audioElement.play();
     const scrubInterval = setInterval(updateScrubInput, 100);
     audioElement.addEventListener('ended', function() {
       clearInterval(scrubInterval);
     });
   } else {
-    playPauseBtn.innerHTML = 'Play .mp3';
+    playPauseBtn.innerHTML = 'Play .wav';
     audioElement.pause();
   }
   paused = !paused;
@@ -342,13 +344,51 @@ async function loadAudioBuffer(): Promise<AudioBuffer> {
   }
 }
 
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
+  }
+}
+
+async function audioBufToWavBuf(audioBuf: AudioBuffer): Promise<ArrayBuffer> {
+  return new Promise((resolve) => {
+    const numChannels = audioBuf.numberOfChannels;
+    const audioData = [];
+    for (let c = 0; c < numChannels; c++) {
+      audioData.push(audioBuf.getChannelData(c));
+    }
+    const wavBuf = new ArrayBuffer(44 + audioData[0].length * 4);
+    const preView = new DataView(wavBuf);
+    writeString(preView, 0, 'RIFF'); // RIFF header
+    preView.setUint32(4, 36 + audioData[0].length * numChannels * 2, true); // main chunk size (36 + data size)
+    writeString(preView, 8, 'WAVE'); // WAVE header
+    writeString(preView, 12, 'fmt'); // fmt sub-chunk
+    preView.setUint32(16, 16, true); // sub-chunk size (16 for PCM)
+    preView.setUint16(20, 1, true); // audio format (PCM)
+    preView.setUint16(22, numChannels, true); // # of channels
+    preView.setUint32(24, audioBuf.sampleRate, true); // sample rate
+    preView.setUint32(28, audioBuf.sampleRate * numChannels * 2, true); // byte rate
+    preView.setUint16(32, numChannels * 2, true); // block align
+    preView.setUint16(34, 16, true); // bits per sample
+    writeString(preView, 36, 'data'); // data sub-chunk
+    preView.setUint32(40, audioData[0].length * numChannels * 2, true); // data sub-chunk size
+    // interleaving for stereo output
+    const postView = new DataView(wavBuf, 44);
+    for (let i = 0; i < audioData.length; i++) {
+      for (let c = 0; c < numChannels; c++) {
+        postView.setInt16((i * numChannels + c) * 2, audioData[c][i] * 0x7fff, true);
+      }
+    }
+    resolve(wavBuf);
+  });
+}
+
 async function handleRenderAudio() {
   audioElement!.currentTime = 0;
   renderingCtx = new OfflineAudioContext(2, audioElement!.duration * audioCtx!.sampleRate, audioCtx!.sampleRate);
   const audioBuffer = await loadAudioBuffer();
   const renderingSource = renderingCtx.createBufferSource();
   renderingSource.buffer = audioBuffer;
-  // create new rendering nodes from original AudioNode object fields
   const renderingMasterGain = renderingCtx.createGain();
   renderingMasterGain.gain.setValueAtTime(masterGain!.gain.value, renderingCtx!.currentTime);
   const renderingCompressor = renderingCtx.createDynamicsCompressor();
@@ -376,14 +416,32 @@ async function handleRenderAudio() {
   renderingPreGain!.connect(renderingDelayNode!).connect(renderingDelayGain!).connect(renderingDistNode!);
   renderingPreGain!.connect(renderingDistNode!);
   renderingDistNode!.connect(renderingHighPass!).connect(renderingLowPass!).connect(renderingCompressor!).connect(renderingMasterGain!).connect(renderingCtx.destination);
-  // audioElement!.play();
-  renderingCtx.startRendering().then((renderedBuffer) => {
+  renderingCtx.startRendering().then(async (renderedBuffer) => {
     const renderingStatus = <HTMLHeadingElement> document.getElementById('render-status-view');
     if (renderingStatus.style.display === 'none') {
       renderingStatus.style.display = 'block';
     }
-    /* // TODO: implement without lamejs
-    const encoder = new lamejs.Mp3Encoder(2, audioCtx!.sampleRate, 128);
+    const wavBuffer = await audioBufToWavBuf(renderedBuffer);
+    const wavBlob = new Blob([wavBuffer],  { type: 'audio/wav' });
+    const a = <HTMLAnchorElement> document.getElementById('download-rendered-link');
+    a.href = URL.createObjectURL(wavBlob);
+    a.download = "";
+    if (a.style.display === 'none') {
+      a.style.display = 'block';
+    }
+    a.innerHTML += ' ('+a.href+')';
+    renderingStatus.innerHTML = 'Rendering Complete; click the link below to download '+a.href;
+  });
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === ' ') {
+    event.preventDefault();
+    handlePlayPause();
+  }
+});
+
+  /* const encoder = new lamejs.Mp3Encoder(2, audioCtx!.sampleRate, 128);
     const audioData = [];
     const leftChannel = renderedBuffer.getChannelData(0);
     const rightChannel = renderedBuffer.getChannelData(1);
@@ -409,18 +467,7 @@ async function handleRenderAudio() {
     if (a.style.display === 'none') {
       a.style.display = 'block';
     }
-    */
-    renderingStatus.innerHTML = 'Rendering Complete; click the link below to download the processed audio!';
-  });
-}
-
-document.addEventListener('keydown', function(event) {
-  if (event.key === ' ') {
-    event.preventDefault();
-    handlePlayPause();
-  }
-});
-
+  */
   /*
   const downloadDest = audioCtx!.createMediaStreamDestination();
   const recorder = new MediaRecorder(downloadDest.stream);

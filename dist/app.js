@@ -92,6 +92,7 @@ function getDistortionCurve(amount, tone) {
                 const x = (i * 2) / n_samples - 1;
                 curve[i] = Math.tanh(x * k);
             }
+            break;
         case 'exponential':
             for (let i = 0; i < n_samples; i++) {
                 const x = (i * 2) / n_samples - 1;
@@ -103,6 +104,7 @@ function getDistortionCurve(amount, tone) {
                 const x = (i * 2) / n_samples - 1;
                 curve[i] = (2 / Math.PI) * Math.atan(x * k);
             }
+            break;
         default:
             for (let i = 0; i < n_samples; i++) {
                 const x = (i * 2) / n_samples - 1;
@@ -321,6 +323,44 @@ function loadAudioBuffer() {
         }
     });
 }
+function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+    }
+}
+function audioBufToWavBuf(audioBuf) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve) => {
+            const numChannels = audioBuf.numberOfChannels;
+            const audioData = [];
+            for (let c = 0; c < numChannels; c++) {
+                audioData.push(audioBuf.getChannelData(c));
+            }
+            const wavBuf = new ArrayBuffer(44 + audioData[0].length * 4);
+            const preView = new DataView(wavBuf);
+            writeString(preView, 0, 'RIFF');
+            preView.setUint32(4, 36 + audioData[0].length * numChannels * 2, true);
+            writeString(preView, 8, 'WAVE');
+            writeString(preView, 12, 'fmt');
+            preView.setUint32(16, 16, true);
+            preView.setUint16(20, 1, true);
+            preView.setUint16(22, numChannels, true);
+            preView.setUint32(24, audioBuf.sampleRate, true);
+            preView.setUint32(28, audioBuf.sampleRate * numChannels * 2, true);
+            preView.setUint16(32, numChannels * 2, true);
+            preView.setUint16(34, 16, true);
+            writeString(preView, 36, 'data');
+            preView.setUint32(40, audioData[0].length * numChannels * 2, true);
+            const postView = new DataView(wavBuf, 44);
+            for (let i = 0; i < audioData.length; i++) {
+                for (let c = 0; c < numChannels; c++) {
+                    postView.setInt16((i * numChannels + c) * 2, audioData[c][i] * 0x7fff, true);
+                }
+            }
+            resolve(wavBuf);
+        });
+    });
+}
 function handleRenderAudio() {
     return __awaiter(this, void 0, void 0, function* () {
         audioElement.currentTime = 0;
@@ -355,13 +395,22 @@ function handleRenderAudio() {
         renderingPreGain.connect(renderingDelayNode).connect(renderingDelayGain).connect(renderingDistNode);
         renderingPreGain.connect(renderingDistNode);
         renderingDistNode.connect(renderingHighPass).connect(renderingLowPass).connect(renderingCompressor).connect(renderingMasterGain).connect(renderingCtx.destination);
-        renderingCtx.startRendering().then((renderedBuffer) => {
+        renderingCtx.startRendering().then((renderedBuffer) => __awaiter(this, void 0, void 0, function* () {
             const renderingStatus = document.getElementById('render-status-view');
             if (renderingStatus.style.display === 'none') {
                 renderingStatus.style.display = 'block';
             }
-            renderingStatus.innerHTML = 'Rendering Complete; click the link below to download the processed audio!';
-        });
+            const wavBuffer = yield audioBufToWavBuf(renderedBuffer);
+            const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+            const a = document.getElementById('download-rendered-link');
+            a.href = URL.createObjectURL(wavBlob);
+            a.download = "";
+            if (a.style.display === 'none') {
+                a.style.display = 'block';
+            }
+            a.innerHTML += ' (' + a.href + ')';
+            renderingStatus.innerHTML = 'Rendering Complete; click the link below to download ' + a.href;
+        }));
     });
 }
 document.addEventListener('keydown', function (event) {
