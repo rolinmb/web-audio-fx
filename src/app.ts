@@ -1,4 +1,5 @@
 let audioCtx: AudioContext | undefined = undefined;
+let renderingCtx: OfflineAudioContext | undefined = undefined;
 let masterGain: GainNode | undefined = undefined;
 let compressor: DynamicsCompressorNode | undefined = undefined;
 let lowPass: BiquadFilterNode | undefined = undefined;
@@ -330,18 +331,95 @@ function handlePlayPause() {
   paused = !paused;
 }
 
-function handleRenderAudio() {
-  const offlineCtx = new OfflineAudioContext(2, audioElement!.duration * audioCtx!.sampleRate, audioCtx!.sampleRate);
-  const renderingSource = audioCtx!.createMediaElementSource(audioElement!);
-  renderingSource.connect(preGain!);
-  preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!);
-  preGain!.connect(distNode!);
-  distNode!.connect(highPass!).connect(lowPass!).connect(compressor!).connect(masterGain!).connect(offlineCtx.destination);
+async function loadAudioBuffer(): Promise<AudioBuffer> {
+  try {
+    const response = await fetch(audioElement!.src);
+    const audioData = await response.arrayBuffer();
+    return await audioCtx!.decodeAudioData(audioData);
+  } catch (error) {
+    console.error('Error loading uploaded audio into rendering buffer:', error);
+    throw new Error('Error loading uploaded audio into rendering buffer: '+error);
+  }
+}
+
+async function handleRenderAudio() {
   audioElement!.currentTime = 0;
-  audioElement!.play();
-  offlineCtx.startRendering().then((renderedBuffer) => {
-    // TODO
+  renderingCtx = new OfflineAudioContext(2, audioElement!.duration * audioCtx!.sampleRate, audioCtx!.sampleRate);
+  const audioBuffer = await loadAudioBuffer();
+  const renderingSource = renderingCtx.createBufferSource();
+  renderingSource.buffer = audioBuffer;
+  // create new rendering nodes from original AudioNode object fields
+  const renderingMasterGain = renderingCtx.createGain();
+  renderingMasterGain.gain.setValueAtTime(masterGain!.gain.value, renderingCtx!.currentTime);
+  const renderingCompressor = renderingCtx.createDynamicsCompressor();
+  renderingCompressor.threshold.setValueAtTime(compressor!.threshold.value, renderingCtx!.currentTime);
+  renderingCompressor.knee.setValueAtTime(compressor!.knee.value, renderingCtx!.currentTime);
+  renderingCompressor.ratio.setValueAtTime(compressor!.ratio.value, renderingCtx!.currentTime);
+  renderingCompressor.attack.setValueAtTime(compressor!.attack.value, renderingCtx!.currentTime);
+  renderingCompressor.release.setValueAtTime(compressor!.release.value, renderingCtx!.currentTime);
+  const renderingLowPass = renderingCtx.createBiquadFilter();
+  renderingLowPass.type = lowPass!.type;
+  renderingLowPass.frequency.setValueAtTime(lowPass!.frequency.value, renderingCtx!.currentTime);
+  const renderingHighPass = renderingCtx.createBiquadFilter();
+  renderingHighPass.type = highPass!.type;
+  renderingHighPass.frequency.setValueAtTime(highPass!.frequency.value, renderingCtx!.currentTime);
+  const renderingDistNode = renderingCtx.createWaveShaper();
+  renderingDistNode.curve = distNode!.curve;
+  renderingDistNode.oversample = distNode!.oversample;
+  const renderingDelayGain = renderingCtx.createGain();
+  renderingDelayGain.gain.setValueAtTime(delayGain!.gain.value, renderingCtx!.currentTime);
+  const renderingDelayNode = renderingCtx.createDelay();
+  renderingDelayNode.delayTime.setValueAtTime(delayNode!.delayTime.value, renderingCtx!.currentTime);
+  const renderingPreGain = renderingCtx.createGain();
+  renderingPreGain.gain.setValueAtTime(preGain!.gain.value, renderingCtx!.currentTime);
+  renderingSource.connect(renderingPreGain!);
+  renderingPreGain!.connect(renderingDelayNode!).connect(renderingDelayGain!).connect(renderingDistNode!);
+  renderingPreGain!.connect(renderingDistNode!);
+  renderingDistNode!.connect(renderingHighPass!).connect(renderingLowPass!).connect(renderingCompressor!).connect(renderingMasterGain!).connect(renderingCtx.destination);
+  // audioElement!.play();
+  renderingCtx.startRendering().then((renderedBuffer) => {
+    const renderingStatus = <HTMLHeadingElement> document.getElementById('render-status-view');
+    if (renderingStatus.style.display === 'none') {
+      renderingStatus.style.display = 'block';
+    }
+    /* // TODO: implement without lamejs
+    const encoder = new lamejs.Mp3Encoder(2, audioCtx!.sampleRate, 128);
+    const audioData = [];
+    const leftChannel = renderedBuffer.getChannelData(0);
+    const rightChannel = renderedBuffer.getChannelData(1);
+    for (let i = 0; i < renderedBuffer.length; i += 1152) {
+      const leftChunk = leftChannel.subarray(i, i + 1152);
+      const rightChunk = rightChannel.subarray(i, i + 1152);
+      const leftInts = new Int16Array(leftChunk.length);
+      const rightInts = new Int16Array(rightChunk.length);
+      const scale = 32767
+      for (let j = 0; j < leftChunk.length; j++) {
+        leftInts[j] = Math.max(-scale, Math.min(scale, leftChunk[j] * scale));
+        rightInts[j] = Math.max(-scale, Math.min(scale, rightChunk[j] * scale));
+      }
+      const buf = encoder.encodeBuffer(leftInts, rightInts);
+      if (buf.length > 0) {
+        audioData.push(new Int8Array(buf));
+      }
+    }
+    const audioBlob = new Blob(audioData, { type: 'audio/mp3' });
+    const a = <HTMLAnchorElement> document.getElementById('download-rendered-link');
+    a.href = URL.createObjectURL(audioBlob);
+    a.download = "";
+    if (a.style.display === 'none') {
+      a.style.display = 'block';
+    }
+    */
+    renderingStatus.innerHTML = 'Rendering Complete; click the link below to download the processed audio!';
   });
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === ' ') {
+    event.preventDefault();
+    handlePlayPause();
+  }
+});
 
   /*
   const downloadDest = audioCtx!.createMediaStreamDestination();
@@ -354,7 +432,7 @@ function handleRenderAudio() {
   };
   recorder.onstop = () => {
     const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
-    const downloadLink = <HTMLLinkElement> document.getElementById('rendered-audio-link');
+    const downloadLink = <HTMLAnchorElement> document.getElementById('rendered-audio-link');
     downloadLink.href = URL.createObjectURL(audioBlob);
     downloadLink.setAttribute('download', 'rendered_audio.mp3');
     downloadLink.style.display = 'block';
@@ -367,11 +445,3 @@ function handleRenderAudio() {
     recorder.stop();
     audioElement!.pause();
   }, audioElement!.duration * 1000);*/
-}
-
-document.addEventListener('keydown', function(event) {
-  if (event.key === ' ') {
-    event.preventDefault();
-    handlePlayPause();
-  }
-});

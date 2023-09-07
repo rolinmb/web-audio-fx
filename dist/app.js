@@ -1,5 +1,15 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 let audioCtx = undefined;
+let renderingCtx = undefined;
 let masterGain = undefined;
 let compressor = undefined;
 let lowPass = undefined;
@@ -298,29 +308,61 @@ function handlePlayPause() {
     }
     paused = !paused;
 }
-function handleRenderAudio() {
-    const downloadDest = audioCtx.createMediaStreamDestination();
-    const recorder = new MediaRecorder(downloadDest.stream);
-    const chunks = [];
-    recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-            chunks.push(e.data);
+function loadAudioBuffer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const response = yield fetch(audioElement.src);
+            const audioData = yield response.arrayBuffer();
+            return yield audioCtx.decodeAudioData(audioData);
         }
-    };
-    recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
-        const downloadLink = document.getElementById('rendered-audio-link');
-        downloadLink.href = URL.createObjectURL(audioBlob);
-        downloadLink.setAttribute('download', 'rendered_audio.mp3');
-    };
-    const downloadSourceNode = audioCtx.createMediaElementSource(audioElement);
-    downloadSourceNode.connect(downloadDest);
-    recorder.start();
-    audioElement.play();
-    setTimeout(() => {
-        recorder.stop();
-        audioElement.pause();
-    }, audioElement.duration * 1000);
+        catch (error) {
+            console.error('Error loading uploaded audio into rendering buffer:', error);
+            throw new Error('Error loading uploaded audio into rendering buffer: ' + error);
+        }
+    });
+}
+function handleRenderAudio() {
+    return __awaiter(this, void 0, void 0, function* () {
+        audioElement.currentTime = 0;
+        renderingCtx = new OfflineAudioContext(2, audioElement.duration * audioCtx.sampleRate, audioCtx.sampleRate);
+        const audioBuffer = yield loadAudioBuffer();
+        const renderingSource = renderingCtx.createBufferSource();
+        renderingSource.buffer = audioBuffer;
+        const renderingMasterGain = renderingCtx.createGain();
+        renderingMasterGain.gain.setValueAtTime(masterGain.gain.value, renderingCtx.currentTime);
+        const renderingCompressor = renderingCtx.createDynamicsCompressor();
+        renderingCompressor.threshold.setValueAtTime(compressor.threshold.value, renderingCtx.currentTime);
+        renderingCompressor.knee.setValueAtTime(compressor.knee.value, renderingCtx.currentTime);
+        renderingCompressor.ratio.setValueAtTime(compressor.ratio.value, renderingCtx.currentTime);
+        renderingCompressor.attack.setValueAtTime(compressor.attack.value, renderingCtx.currentTime);
+        renderingCompressor.release.setValueAtTime(compressor.release.value, renderingCtx.currentTime);
+        const renderingLowPass = renderingCtx.createBiquadFilter();
+        renderingLowPass.type = lowPass.type;
+        renderingLowPass.frequency.setValueAtTime(lowPass.frequency.value, renderingCtx.currentTime);
+        const renderingHighPass = renderingCtx.createBiquadFilter();
+        renderingHighPass.type = highPass.type;
+        renderingHighPass.frequency.setValueAtTime(highPass.frequency.value, renderingCtx.currentTime);
+        const renderingDistNode = renderingCtx.createWaveShaper();
+        renderingDistNode.curve = distNode.curve;
+        renderingDistNode.oversample = distNode.oversample;
+        const renderingDelayGain = renderingCtx.createGain();
+        renderingDelayGain.gain.setValueAtTime(delayGain.gain.value, renderingCtx.currentTime);
+        const renderingDelayNode = renderingCtx.createDelay();
+        renderingDelayNode.delayTime.setValueAtTime(delayNode.delayTime.value, renderingCtx.currentTime);
+        const renderingPreGain = renderingCtx.createGain();
+        renderingPreGain.gain.setValueAtTime(preGain.gain.value, renderingCtx.currentTime);
+        renderingSource.connect(renderingPreGain);
+        renderingPreGain.connect(renderingDelayNode).connect(renderingDelayGain).connect(renderingDistNode);
+        renderingPreGain.connect(renderingDistNode);
+        renderingDistNode.connect(renderingHighPass).connect(renderingLowPass).connect(renderingCompressor).connect(renderingMasterGain).connect(renderingCtx.destination);
+        renderingCtx.startRendering().then((renderedBuffer) => {
+            const renderingStatus = document.getElementById('render-status-view');
+            if (renderingStatus.style.display === 'none') {
+                renderingStatus.style.display = 'block';
+            }
+            renderingStatus.innerHTML = 'Rendering Complete; click the link below to download the processed audio!';
+        });
+    });
 }
 document.addEventListener('keydown', function (event) {
     if (event.key === ' ') {
