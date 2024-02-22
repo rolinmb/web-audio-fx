@@ -5,8 +5,8 @@
   </head>
   <body>
     <h2 id="input-header">Add Audio FX To MP3 Files</h2>
-    <input id="audio-file-input" type="file" accept=".wav" placeholder="select a .wav audio file" />
-    <button id="audio-upload-btn" onclick="handleAudioUpload()">Upload .wav file</button>
+    <input id="audio-file-input" type="file" accept=".mp3" placeholder="select a .mp3 audio file" />
+    <button id="audio-upload-btn">Upload .mp3 file</button>
     <audio id="main-audio" style="display: none"></audio>
     <h2 id="audio-url-header" style="display: none"></h2>
     <div id="fx-sliders-container">
@@ -87,5 +87,6 @@
     <h4 id="render-status-view" style="display: none">Rendering...</h4>
     <a id="download-rendered-link" style="display: none">download your new .wav</a>
   </body>
-  <script src="../dist/app.js"></script>
+  <!-- <script src="../dist/app.js"></script> -->
+  <script src="dist.bundle.js"></script>
 </html>

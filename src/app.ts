@@ -161,92 +161,6 @@ document.getElementById('pre-gain-slider')!.addEventListener('input', function()
   document.getElementById('pre-gain-view')!.innerHTML = "Pre Gain: "+val.toString()+' db';
 });
 
-window.onload = function() {
-  audioCtx = new AudioContext();
-
-  masterGain = audioCtx.createGain();
-  masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
-  const masterGainSlider = <HTMLInputElement> document.getElementById('master-gain-slider');
-  masterGainSlider.value = '1';
-
-  compressor = audioCtx.createDynamicsCompressor();
-  compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
-  compressor.knee.setValueAtTime(40, audioCtx.currentTime);
-  compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-  compressor.attack.setValueAtTime(0, audioCtx.currentTime);
-  compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-
-  const compressorThresholdSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
-  compressorThresholdSlider.value = '-50';
-  const compressorKneeSlider = <HTMLInputElement> document.getElementById('compressor-knee-slider');
-  compressorKneeSlider.value = '40';
-  const compressorRatioSlider = <HTMLInputElement> document.getElementById('compressor-ratio-slider');
-  compressorRatioSlider.value = '12';
-  const compressorAttackSlider = <HTMLInputElement> document.getElementById('compressor-attack-slider');
-  compressorAttackSlider.value = '0';
-  const compressorReleaseSlider = <HTMLInputElement> document.getElementById('compressor-release-slider');
-  compressorReleaseSlider.value = '0.25';
-
-  lowPass = audioCtx.createBiquadFilter();
-  lowPass.type = 'lowpass';
-  lowPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
-  const lowPassSlider = <HTMLInputElement> document.getElementById('low-pass-slider');
-  lowPassSlider.value = '1000';
-
-  highPass = audioCtx.createBiquadFilter();
-  highPass.type = 'highpass';
-  highPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
-  const highPassSlider = <HTMLInputElement> document.getElementById('high-pass-slider');
-  highPassSlider.value = '1000';
-
-  distNode = audioCtx.createWaveShaper();
-  distNode.curve = getDistortionCurve(0, 0.5);
-  distNode.oversample = <OverSampleType>'2x';
-  const distAmountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
-  distAmountSlider.value = '0';
-
-  const distToneSlider = <HTMLInputElement> document.getElementById('distortion-tone-slider');
-  distToneSlider.value = '5';
-
-  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
-  distortionSelect.style.display = 'none';
-
-  delayGain = audioCtx.createGain();
-  delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
-  const delayGainSlider = <HTMLInputElement> document.getElementById('delay-gain-slider');
-  delayGainSlider.value = '0';
-
-  delayNode = audioCtx.createDelay();
-  delayNode.delayTime.setValueAtTime(0.25, audioCtx.currentTime);
-  const delayTimeSlider = <HTMLInputElement> document.getElementById('delay-time-slider');
-  delayTimeSlider.value = '0.25';
-
-  preGain = audioCtx.createGain();
-  preGain.gain.setValueAtTime(2, audioCtx.currentTime);
-  const preGainSlider = <HTMLInputElement> document.getElementById('pre-gain-slider');
-  preGainSlider.value = '2';
-
-  const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
-  scrubInput.value = '0';
-  scrubInput.addEventListener('input', function() {
-    audioElement!.currentTime = parseFloat(scrubInput.value);
-  });
-  scrubInput.addEventListener('loadedmetadata', function() {
-    scrubInput.value = '0';
-  });
-
-  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
-  const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
-  const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
-  for (let i = 0; i < paramWraps.length; i++) {
-    paramWraps[i].style.display = 'none';
-    if (i < paramWraps.length - 1) {
-      paramViews[i].style.display = 'none';
-      paramSliders[i].style.display = 'none';
-    }
-  }
-}
-
 function unhideElements() {
   const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
   urlHeader.style.display = 'block';
@@ -274,15 +188,15 @@ function unhideElements() {
 
 function handleAudioUpload() {
   const uploadBtn = <HTMLButtonElement> document.getElementById('audio-upload-btn');
-  uploadBtn.innerHTML = 'Upload new .wav';
+  uploadBtn.innerHTML = 'Upload new .mp3';
   const audioFileInput = <HTMLInputElement> document.getElementById('audio-file-input'); 
   if (audioFileInput && audioFileInput.files && audioFileInput.files.length > 0) {
     if (audioFileInput.files.length > 1) {
-      alert('Please select only one .wav file to edit.');
+      alert('Please select only one .mp3 file to edit.');
       audioFileInput.value = '';
       return;
-    } else if (!audioFileInput.files[0].name.endsWith('.wav')) {
-      alert('Please select only .wav files to edit.');
+    } else if (!audioFileInput.files[0].name.endsWith('.mp3')) {
+      alert('Please select only .mp3 files to edit.');
       audioFileInput.value = '';
       return;
     }
@@ -297,12 +211,12 @@ function handleAudioUpload() {
     preGain!.connect(distNode!);
     distNode!.connect(highPass!).connect(lowPass!).connect(compressor!).connect(masterGain!).connect(audioCtx!.destination);
     const urlHeader = <HTMLHeadingElement> document.getElementById('audio-url-header');
-    urlHeader.innerHTML = 'Current .wav File: '+audioFile.name;
+    urlHeader.innerHTML = 'Current .mp3 File: '+audioFile.name;
     if (urlHeader.style.display === 'none') {
       unhideElements();
     }
   } else {
-    alert('Please select a .wav file to edit.');
+    alert('Please select a .mp3 file to edit.');
     audioFileInput.value = '';
   }
 }
@@ -492,3 +406,92 @@ document.addEventListener('keydown', function(event) {
     recorder.stop();
     audioElement!.pause();
   }, audioElement!.duration * 1000);*/
+
+window.onload = function() {
+  audioCtx = new AudioContext();
+  
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
+  const masterGainSlider = <HTMLInputElement> document.getElementById('master-gain-slider');
+  masterGainSlider.value = '1';
+  
+  compressor = audioCtx.createDynamicsCompressor();
+  compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+  compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+  compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+  compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+  compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+  
+  const compressorThresholdSlider = <HTMLInputElement> document.getElementById('compressor-threshold-slider');
+  compressorThresholdSlider.value = '-50';
+  const compressorKneeSlider = <HTMLInputElement> document.getElementById('compressor-knee-slider');
+  compressorKneeSlider.value = '40';
+  const compressorRatioSlider = <HTMLInputElement> document.getElementById('compressor-ratio-slider');
+  compressorRatioSlider.value = '12';
+  const compressorAttackSlider = <HTMLInputElement> document.getElementById('compressor-attack-slider');
+  compressorAttackSlider.value = '0';
+  const compressorReleaseSlider = <HTMLInputElement> document.getElementById('compressor-release-slider');
+  compressorReleaseSlider.value = '0.25';
+  
+  lowPass = audioCtx.createBiquadFilter();
+  lowPass.type = 'lowpass';
+  lowPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+  const lowPassSlider = <HTMLInputElement> document.getElementById('low-pass-slider');
+  lowPassSlider.value = '1000';
+  
+  highPass = audioCtx.createBiquadFilter();
+  highPass.type = 'highpass';
+  highPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+  const highPassSlider = <HTMLInputElement> document.getElementById('high-pass-slider');
+  highPassSlider.value = '1000';
+  
+  distNode = audioCtx.createWaveShaper();
+  distNode.curve = getDistortionCurve(0, 0.5);
+  distNode.oversample = <OverSampleType>'2x';
+  const distAmountSlider = <HTMLInputElement> document.getElementById('distortion-amount-slider');
+  distAmountSlider.value = '0';
+  
+  const distToneSlider = <HTMLInputElement> document.getElementById('distortion-tone-slider');
+  distToneSlider.value = '5';
+  
+  const distortionSelect = <HTMLSelectElement> document.getElementById('distortion-type-select');
+  distortionSelect.style.display = 'none';
+  
+  delayGain = audioCtx.createGain();
+  delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  const delayGainSlider = <HTMLInputElement> document.getElementById('delay-gain-slider');
+  delayGainSlider.value = '0';
+  
+  delayNode = audioCtx.createDelay();
+  delayNode.delayTime.setValueAtTime(0.25, audioCtx.currentTime);
+  const delayTimeSlider = <HTMLInputElement> document.getElementById('delay-time-slider');
+  delayTimeSlider.value = '0.25';
+  
+  preGain = audioCtx.createGain();
+  preGain.gain.setValueAtTime(2, audioCtx.currentTime);
+  const preGainSlider = <HTMLInputElement> document.getElementById('pre-gain-slider');
+  preGainSlider.value = '2';
+  
+  const scrubInput = <HTMLInputElement> document.getElementById('audio-scrub-input');
+  scrubInput.value = '0';
+  scrubInput.addEventListener('input', function() {
+    audioElement!.currentTime = parseFloat(scrubInput.value);
+  });
+  scrubInput.addEventListener('loadedmetadata', function() {
+    scrubInput.value = '0';
+  });
+  
+  const paramWraps = document.getElementsByClassName('param-wrap') as HTMLCollectionOf<HTMLDivElement>;
+  const paramViews = document.getElementsByClassName('fx-slider-view') as HTMLCollectionOf<HTMLHeadingElement>;
+  const paramSliders = document.getElementsByClassName('fx-slider') as HTMLCollectionOf<HTMLInputElement>;
+  for (let i = 0; i < paramWraps.length; i++) {
+    paramWraps[i].style.display = 'none';
+    if (i < paramWraps.length - 1) {
+      paramViews[i].style.display = 'none';
+      paramSliders[i].style.display = 'none';
+    }
+  }
+  
+  const uploadInput = document.getElementById("audio-upload-btn") as HTMLInputElement;
+  uploadInput.addEventListener("click", handleAudioUpload);
+}

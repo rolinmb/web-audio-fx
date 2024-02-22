@@ -1,0 +1,17 @@
+{
+  "name": "web-audio-fx",
+  "version": "1.0.0",
+  "description": "Users can upload .mp3 files to the browser and apply audio FX using the WebAudio API",
+  "main": "src/app.ts",
+  "scripts": {
+    "dev": "webpack --mode development",
+    "prod": "webpack --mode production",
+    "watch": "webpack --watch --mode production"
+  },
+  "author": "Rolin Blake",
+  "license": "ISC",
+  "dependencies": {
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
+  }
+}

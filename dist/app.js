@@ -153,78 +153,6 @@ document.getElementById('pre-gain-slider').addEventListener('input', function ()
     preGain.gain.setValueAtTime(val, audioCtx.currentTime);
     document.getElementById('pre-gain-view').innerHTML = "Pre Gain: " + val.toString() + ' db';
 });
-window.onload = function () {
-    audioCtx = new AudioContext();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
-    const masterGainSlider = document.getElementById('master-gain-slider');
-    masterGainSlider.value = '1';
-    compressor = audioCtx.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
-    compressor.knee.setValueAtTime(40, audioCtx.currentTime);
-    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-    compressor.attack.setValueAtTime(0, audioCtx.currentTime);
-    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-    const compressorThresholdSlider = document.getElementById('compressor-threshold-slider');
-    compressorThresholdSlider.value = '-50';
-    const compressorKneeSlider = document.getElementById('compressor-knee-slider');
-    compressorKneeSlider.value = '40';
-    const compressorRatioSlider = document.getElementById('compressor-ratio-slider');
-    compressorRatioSlider.value = '12';
-    const compressorAttackSlider = document.getElementById('compressor-attack-slider');
-    compressorAttackSlider.value = '0';
-    const compressorReleaseSlider = document.getElementById('compressor-release-slider');
-    compressorReleaseSlider.value = '0.25';
-    lowPass = audioCtx.createBiquadFilter();
-    lowPass.type = 'lowpass';
-    lowPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
-    const lowPassSlider = document.getElementById('low-pass-slider');
-    lowPassSlider.value = '1000';
-    highPass = audioCtx.createBiquadFilter();
-    highPass.type = 'highpass';
-    highPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
-    const highPassSlider = document.getElementById('high-pass-slider');
-    highPassSlider.value = '1000';
-    distNode = audioCtx.createWaveShaper();
-    distNode.curve = getDistortionCurve(0, 0.5);
-    distNode.oversample = '2x';
-    const distAmountSlider = document.getElementById('distortion-amount-slider');
-    distAmountSlider.value = '0';
-    const distToneSlider = document.getElementById('distortion-tone-slider');
-    distToneSlider.value = '5';
-    const distortionSelect = document.getElementById('distortion-type-select');
-    distortionSelect.style.display = 'none';
-    delayGain = audioCtx.createGain();
-    delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    const delayGainSlider = document.getElementById('delay-gain-slider');
-    delayGainSlider.value = '0';
-    delayNode = audioCtx.createDelay();
-    delayNode.delayTime.setValueAtTime(0.25, audioCtx.currentTime);
-    const delayTimeSlider = document.getElementById('delay-time-slider');
-    delayTimeSlider.value = '0.25';
-    preGain = audioCtx.createGain();
-    preGain.gain.setValueAtTime(2, audioCtx.currentTime);
-    const preGainSlider = document.getElementById('pre-gain-slider');
-    preGainSlider.value = '2';
-    const scrubInput = document.getElementById('audio-scrub-input');
-    scrubInput.value = '0';
-    scrubInput.addEventListener('input', function () {
-        audioElement.currentTime = parseFloat(scrubInput.value);
-    });
-    scrubInput.addEventListener('loadedmetadata', function () {
-        scrubInput.value = '0';
-    });
-    const paramWraps = document.getElementsByClassName('param-wrap');
-    const paramViews = document.getElementsByClassName('fx-slider-view');
-    const paramSliders = document.getElementsByClassName('fx-slider');
-    for (let i = 0; i < paramWraps.length; i++) {
-        paramWraps[i].style.display = 'none';
-        if (i < paramWraps.length - 1) {
-            paramViews[i].style.display = 'none';
-            paramSliders[i].style.display = 'none';
-        }
-    }
-};
 function unhideElements() {
     const urlHeader = document.getElementById('audio-url-header');
     urlHeader.style.display = 'block';
@@ -293,11 +221,11 @@ function handlePlayPause() {
     const playPauseBtn = document.getElementById('play-pause-btn');
     const audioElement = document.getElementById('main-audio');
     if ((audioElement && (!audioElement.src || audioElement.src === '')) || playPauseBtn.style.display === 'none') {
-        alert('Cannot play/pause audio if no .mp3 file is selected.');
+        alert('Cannot play/pause audio if no .wav file is selected.');
         return;
     }
     if (paused) {
-        playPauseBtn.innerHTML = 'Pause .mp3';
+        playPauseBtn.innerHTML = 'Pause .wav';
         audioElement.play();
         const scrubInterval = setInterval(updateScrubInput, 100);
         audioElement.addEventListener('ended', function () {
@@ -305,7 +233,7 @@ function handlePlayPause() {
         });
     }
     else {
-        playPauseBtn.innerHTML = 'Play .mp3';
+        playPauseBtn.innerHTML = 'Play .wav';
         audioElement.pause();
     }
     paused = !paused;
@@ -419,3 +347,77 @@ document.addEventListener('keydown', function (event) {
         handlePlayPause();
     }
 });
+window.onload = function () {
+    audioCtx = new AudioContext();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
+    const masterGainSlider = document.getElementById('master-gain-slider');
+    masterGainSlider.value = '1';
+    compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+    compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+    compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+    compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+    compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+    const compressorThresholdSlider = document.getElementById('compressor-threshold-slider');
+    compressorThresholdSlider.value = '-50';
+    const compressorKneeSlider = document.getElementById('compressor-knee-slider');
+    compressorKneeSlider.value = '40';
+    const compressorRatioSlider = document.getElementById('compressor-ratio-slider');
+    compressorRatioSlider.value = '12';
+    const compressorAttackSlider = document.getElementById('compressor-attack-slider');
+    compressorAttackSlider.value = '0';
+    const compressorReleaseSlider = document.getElementById('compressor-release-slider');
+    compressorReleaseSlider.value = '0.25';
+    lowPass = audioCtx.createBiquadFilter();
+    lowPass.type = 'lowpass';
+    lowPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    const lowPassSlider = document.getElementById('low-pass-slider');
+    lowPassSlider.value = '1000';
+    highPass = audioCtx.createBiquadFilter();
+    highPass.type = 'highpass';
+    highPass.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    const highPassSlider = document.getElementById('high-pass-slider');
+    highPassSlider.value = '1000';
+    distNode = audioCtx.createWaveShaper();
+    distNode.curve = getDistortionCurve(0, 0.5);
+    distNode.oversample = '2x';
+    const distAmountSlider = document.getElementById('distortion-amount-slider');
+    distAmountSlider.value = '0';
+    const distToneSlider = document.getElementById('distortion-tone-slider');
+    distToneSlider.value = '5';
+    const distortionSelect = document.getElementById('distortion-type-select');
+    distortionSelect.style.display = 'none';
+    delayGain = audioCtx.createGain();
+    delayGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    const delayGainSlider = document.getElementById('delay-gain-slider');
+    delayGainSlider.value = '0';
+    delayNode = audioCtx.createDelay();
+    delayNode.delayTime.setValueAtTime(0.25, audioCtx.currentTime);
+    const delayTimeSlider = document.getElementById('delay-time-slider');
+    delayTimeSlider.value = '0.25';
+    preGain = audioCtx.createGain();
+    preGain.gain.setValueAtTime(2, audioCtx.currentTime);
+    const preGainSlider = document.getElementById('pre-gain-slider');
+    preGainSlider.value = '2';
+    const scrubInput = document.getElementById('audio-scrub-input');
+    scrubInput.value = '0';
+    scrubInput.addEventListener('input', function () {
+        audioElement.currentTime = parseFloat(scrubInput.value);
+    });
+    scrubInput.addEventListener('loadedmetadata', function () {
+        scrubInput.value = '0';
+    });
+    const paramWraps = document.getElementsByClassName('param-wrap');
+    const paramViews = document.getElementsByClassName('fx-slider-view');
+    const paramSliders = document.getElementsByClassName('fx-slider');
+    for (let i = 0; i < paramWraps.length; i++) {
+        paramWraps[i].style.display = 'none';
+        if (i < paramWraps.length - 1) {
+            paramViews[i].style.display = 'none';
+            paramSliders[i].style.display = 'none';
+        }
+    }
+    const uploadInput = document.getElementById("audio-upload-btn");
+    uploadInput.addEventListener("click", handleAudioUpload);
+};
