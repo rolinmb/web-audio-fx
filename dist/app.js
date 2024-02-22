@@ -212,6 +212,12 @@ function handleAudioUpload() {
         alert('Please select a .mp3 file to edit.');
         audioFileInput.value = '';
     }
+    document.addEventListener('keydown', function (event) {
+        if (event.key === ' ') {
+            event.preventDefault();
+            handlePlayPause();
+        }
+    });
 }
 function updateScrubInput() {
     const scrubInput = document.getElementById('audio-scrub-input');
@@ -341,12 +347,6 @@ function handleRenderAudio() {
         }));
     });
 }
-document.addEventListener('keydown', function (event) {
-    if (event.key === ' ') {
-        event.preventDefault();
-        handlePlayPause();
-    }
-});
 window.onload = function () {
     audioCtx = new AudioContext();
     masterGain = audioCtx.createGain();
@@ -420,4 +420,8 @@ window.onload = function () {
     }
     const uploadInput = document.getElementById("audio-upload-btn");
     uploadInput.addEventListener("click", handleAudioUpload);
+    const playPauseBtn = document.getElementById("play-pause-btn");
+    playPauseBtn.addEventListener("click", handlePlayPause);
+    const renderBtn = document.getElementById("render-audio-btn");
+    renderBtn.addEventListener("click", handleRenderAudio);
 };
