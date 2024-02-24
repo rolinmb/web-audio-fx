@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 let audioCtx = undefined;
 let renderingCtx = undefined;
+let mediaRecorder = undefined;
 let masterGain = undefined;
 let compressor = undefined;
 let lowPass = undefined;
@@ -212,6 +213,8 @@ function handleAudioUpload() {
         alert('Please select a .mp3 file to edit.');
         audioFileInput.value = '';
     }
+    const playPauseBtn = document.getElementById("play-pause-btn");
+    playPauseBtn.addEventListener("click", handlePlayPause);
     document.addEventListener('keydown', function (event) {
         if (event.key === ' ') {
             event.preventDefault();
@@ -244,16 +247,21 @@ function handlePlayPause() {
     }
     paused = !paused;
 }
+function handleRecordEnd() {
+    mediaRecorder.stop();
+    alert("Audio rendering finished");
+    const playPauseBtn = document.getElementById("play-pause-btn");
+    playPauseBtn.style.display = "block";
+}
 function handleRenderAudio() {
     return __awaiter(this, void 0, void 0, function* () {
         alert("Audio rendering started");
+        const playPauseBtn = document.getElementById("play-pause-btn");
+        playPauseBtn.style.display = "none";
+        playPauseBtn.removeEventListener("click", handlePlayPause);
         audioElement.currentTime = 0;
         const audioStream = audioCtx.createMediaStreamDestination().stream;
-        const mediaRecorder = new MediaRecorder(audioStream);
-        function handleRecordEnd() {
-            mediaRecorder.stop();
-            alert("Audio rendering finished");
-        }
+        mediaRecorder = new MediaRecorder(audioStream);
         audioElement.removeEventListener("ended", handleRecordEnd);
         const recordedChunks = [];
         mediaRecorder.ondataavailable = (event) => {
@@ -344,8 +352,6 @@ window.onload = function () {
     }
     const uploadInput = document.getElementById("audio-upload-btn");
     uploadInput.addEventListener("click", handleAudioUpload);
-    const playPauseBtn = document.getElementById("play-pause-btn");
-    playPauseBtn.addEventListener("click", handlePlayPause);
     const renderBtn = document.getElementById("render-audio-btn");
     renderBtn.addEventListener("click", handleRenderAudio);
 };
