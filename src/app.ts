@@ -111,7 +111,6 @@ function getDistortionCurve(amount: number, tone: number): Float32Array {
       }
       break;
   }
-  
   return curve;
 }
 
@@ -253,157 +252,41 @@ function handlePlayPause() {
   paused = !paused;
 }
 
-async function loadAudioBuffer(): Promise<AudioBuffer> {
-  try {
-    const response = await fetch(audioElement!.src);
-    const audioData = await response.arrayBuffer();
-    return await audioCtx!.decodeAudioData(audioData);
-  } catch (error) {
-    console.error('Error loading uploaded audio into rendering buffer:', error);
-    throw new Error('Error loading uploaded audio into rendering buffer: '+error);
-  }
-}
-
-function writeString(view: DataView, offset: number, str: string) {
-  for (let i = 0; i < str.length; i++) {
-    view.setUint8(offset + i, str.charCodeAt(i));
-  }
-}
-
-async function audioBufToWavBuf(audioBuf: AudioBuffer): Promise<ArrayBuffer> {
-  return new Promise((resolve) => {
-    const numChannels = audioBuf.numberOfChannels;
-    const audioData = [];
-    for (let c = 0; c < numChannels; c++) {
-      audioData.push(audioBuf.getChannelData(c));
-    }
-    const wavBuf = new ArrayBuffer(44 + audioData[0].length * 4);
-    const preView = new DataView(wavBuf);
-    writeString(preView, 0, 'RIFF'); // RIFF header
-    preView.setUint32(4, 36 + audioData[0].length * numChannels * 2, true); // main chunk size (36 + data size)
-    writeString(preView, 8, 'WAVE'); // WAVE header
-    writeString(preView, 12, 'fmt'); // fmt sub-chunk
-    preView.setUint32(16, 16, true); // sub-chunk size (16 for PCM)
-    preView.setUint16(20, 1, true); // audio format (PCM)
-    preView.setUint16(22, numChannels, true); // # of channels
-    preView.setUint32(24, audioBuf.sampleRate, true); // sample rate
-    preView.setUint32(28, audioBuf.sampleRate * numChannels * 2, true); // byte rate
-    preView.setUint16(32, numChannels * 2, true); // block align
-    preView.setUint16(34, 16, true); // bits per sample
-    writeString(preView, 36, 'data'); // data sub-chunk
-    preView.setUint32(40, audioData[0].length * numChannels * 2, true); // data sub-chunk size
-    // interleaving for stereo output
-    const postView = new DataView(wavBuf, 44);
-    for (let i = 0; i < audioData.length; i++) {
-      for (let c = 0; c < numChannels; c++) {
-        postView.setInt16((i * numChannels + c) * 2, audioData[c][i] * 0x7fff, true);
-      }
-    }
-    resolve(wavBuf);
-  });
-}
-
 async function handleRenderAudio() {
+  alert("Audio rendering started");
   audioElement!.currentTime = 0;
-  renderingCtx = new OfflineAudioContext(2, audioElement!.duration * audioCtx!.sampleRate, audioCtx!.sampleRate);
-  const audioBuffer = await loadAudioBuffer();
-  const renderingSource = renderingCtx.createBufferSource();
-  renderingSource.buffer = audioBuffer;
-  const renderingMasterGain = renderingCtx.createGain();
-  renderingMasterGain.gain.setValueAtTime(masterGain!.gain.value, renderingCtx!.currentTime);
-  const renderingCompressor = renderingCtx.createDynamicsCompressor();
-  renderingCompressor.threshold.setValueAtTime(compressor!.threshold.value, renderingCtx!.currentTime);
-  renderingCompressor.knee.setValueAtTime(compressor!.knee.value, renderingCtx!.currentTime);
-  renderingCompressor.ratio.setValueAtTime(compressor!.ratio.value, renderingCtx!.currentTime);
-  renderingCompressor.attack.setValueAtTime(compressor!.attack.value, renderingCtx!.currentTime);
-  renderingCompressor.release.setValueAtTime(compressor!.release.value, renderingCtx!.currentTime);
-  const renderingLowPass = renderingCtx.createBiquadFilter();
-  renderingLowPass.type = lowPass!.type;
-  renderingLowPass.frequency.setValueAtTime(lowPass!.frequency.value, renderingCtx!.currentTime);
-  const renderingHighPass = renderingCtx.createBiquadFilter();
-  renderingHighPass.type = highPass!.type;
-  renderingHighPass.frequency.setValueAtTime(highPass!.frequency.value, renderingCtx!.currentTime);
-  const renderingDistNode = renderingCtx.createWaveShaper();
-  renderingDistNode.curve = distNode!.curve;
-  renderingDistNode.oversample = distNode!.oversample;
-  const renderingDelayGain = renderingCtx.createGain();
-  renderingDelayGain.gain.setValueAtTime(delayGain!.gain.value, renderingCtx!.currentTime);
-  const renderingDelayNode = renderingCtx.createDelay();
-  renderingDelayNode.delayTime.setValueAtTime(delayNode!.delayTime.value, renderingCtx!.currentTime);
-  const renderingPreGain = renderingCtx.createGain();
-  renderingPreGain.gain.setValueAtTime(preGain!.gain.value, renderingCtx!.currentTime);
-  renderingSource.connect(renderingPreGain!);
-  renderingPreGain!.connect(renderingDelayNode!).connect(renderingDelayGain!).connect(renderingDistNode!);
-  renderingPreGain!.connect(renderingDistNode!);
-  renderingDistNode!.connect(renderingHighPass!).connect(renderingLowPass!).connect(renderingCompressor!).connect(renderingMasterGain!).connect(renderingCtx.destination);
-  renderingCtx.startRendering().then(async (renderedBuffer) => {
-    const renderingStatus = <HTMLHeadingElement> document.getElementById('render-status-view');
-    if (renderingStatus.style.display === 'none') {
-      renderingStatus.style.display = 'block';
-    }
-    const wavBuffer = await audioBufToWavBuf(renderedBuffer);
-    const wavBlob = new Blob([wavBuffer],  { type: 'audio/wav' });
-    const a = <HTMLAnchorElement> document.getElementById('download-rendered-link');
-    a.href = URL.createObjectURL(wavBlob);
-    a.download = "";
-    if (a.style.display === 'none') {
-      a.style.display = 'block';
-    }
-    a.innerHTML += ' ('+a.href+')';
-    renderingStatus.innerHTML = 'Rendering Complete; click the link below to download '+a.href;
-  });
-}
-  /* const encoder = new lamejs.Mp3Encoder(2, audioCtx!.sampleRate, 128);
-    const audioData = [];
-    const leftChannel = renderedBuffer.getChannelData(0);
-    const rightChannel = renderedBuffer.getChannelData(1);
-    for (let i = 0; i < renderedBuffer.length; i += 1152) {
-      const leftChunk = leftChannel.subarray(i, i + 1152);
-      const rightChunk = rightChannel.subarray(i, i + 1152);
-      const leftInts = new Int16Array(leftChunk.length);
-      const rightInts = new Int16Array(rightChunk.length);
-      const scale = 32767
-      for (let j = 0; j < leftChunk.length; j++) {
-        leftInts[j] = Math.max(-scale, Math.min(scale, leftChunk[j] * scale));
-        rightInts[j] = Math.max(-scale, Math.min(scale, rightChunk[j] * scale));
-      }
-      const buf = encoder.encodeBuffer(leftInts, rightInts);
-      if (buf.length > 0) {
-        audioData.push(new Int8Array(buf));
-      }
-    }
-    const audioBlob = new Blob(audioData, { type: 'audio/mp3' });
-    const a = <HTMLAnchorElement> document.getElementById('download-rendered-link');
-    a.href = URL.createObjectURL(audioBlob);
-    a.download = "";
-    if (a.style.display === 'none') {
-      a.style.display = 'block';
-    }
-  */
-  /*
-  const downloadDest = audioCtx!.createMediaStreamDestination();
-  const recorder = new MediaRecorder(downloadDest.stream);
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) {
-      chunks.push(e.data)
+  const audioStream = audioCtx!.createMediaStreamDestination().stream;
+  const mediaRecorder = new MediaRecorder(audioStream);
+  function handleRecordEnd() {
+    mediaRecorder.stop();
+    alert("Audio rendering finished");
+  }
+  audioElement!.removeEventListener("ended", handleRecordEnd);
+  const recordedChunks: Blob[] = [];
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) {
+      recordedChunks.push(event.data);
     }
   };
-  recorder.onstop = () => {
-    const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
-    const downloadLink = <HTMLAnchorElement> document.getElementById('rendered-audio-link');
-    downloadLink.href = URL.createObjectURL(audioBlob);
-    downloadLink.setAttribute('download', 'rendered_audio.mp3');
-    downloadLink.style.display = 'block';
+  mediaRecorder.onstop = async () => {
+    if (recordedChunks.length > 0) {
+      // combine recorded chunks into a single Blob
+      /*const audioBlob = new Blob(recordedChunks, { type: "audio/wav" });
+      const mp3Encoder = new lamejs.Mp3Encoder(2, audioCtx!.sampleRate, 128);
+      const wavData = await audioBlob.arrayBuffer();
+      const samples = new Int16Array(wavData);
+      const mp3buf = mp3Encoder.encodeBuffer(samples);
+      if (mp3buf.length > 0) {
+        const mp3Blob = new Blob([new Uint8Array(mp3buf)], { type: "audio/mp3" });
+        // TODO: use blob to create file to download and URL / link to clikc to download
+      }*/
+      alert("ready to create download of rendered audio");
+    }
   };
-  const downloadSourceNode = audioCtx!.createMediaElementSource(audioElement!);
-  downloadSourceNode.connect(downloadDest);
-  recorder.start();
+  mediaRecorder.start();
   audioElement!.play();
-  setTimeout(() => {
-    recorder.stop();
-    audioElement!.pause();
-  }, audioElement!.duration * 1000);*/
+  audioElement!.addEventListener("ended", handleRecordEnd);
+}
 
 window.onload = function() {
   audioCtx = new AudioContext();
