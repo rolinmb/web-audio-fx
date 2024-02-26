@@ -196,7 +196,7 @@ function handleAudioUpload() {
       alert('Please select only one .mp3 or .wav file to edit.');
       audioFileInput.value = '';
       return;
-    } else if (!audioFileInput.files[0].name.endsWith('.mp3') || !audioFileInput.files[0].name.endsWith(".wav")) {
+    } else if (!audioFileInput.files[0].name.endsWith('.mp3') && !audioFileInput.files[0].name.endsWith(".wav")) {
       alert('Please select only .mp3 or .wav files to edit.');
       audioFileInput.value = '';
       return;
@@ -222,6 +222,7 @@ function handleAudioUpload() {
     audioFileInput.value = '';
   }
   const playPauseBtn = document.getElementById("play-pause-btn") as HTMLButtonElement;
+  playPauseBtn.innerHTML = "Play";
   playPauseBtn.addEventListener("click", handlePlayPause);
   document.addEventListener('keydown', docHandlePlayPause);
 }
@@ -239,14 +240,14 @@ function handlePlayPause() {
     return;
   }
   if (paused) {
-    playPauseBtn.innerHTML = 'Pause .wav';
+    playPauseBtn.innerHTML = 'Pause';
     audioElement.play();
     const scrubInterval = setInterval(updateScrubInput, 100);
     audioElement.addEventListener('ended', function() {
       clearInterval(scrubInterval);
     });
   } else {
-    playPauseBtn.innerHTML = 'Play .wav';
+    playPauseBtn.innerHTML = 'Play';
     audioElement.pause();
   }
   paused = !paused;
