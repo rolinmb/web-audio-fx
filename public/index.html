@@ -4,8 +4,8 @@
     <link rel="stylesheet" href="index.css">
   </head>
   <body>
-    <h2 id="input-header">Add Audio FX To MP3 Files</h2>
-    <input id="audio-file-input" type="file" accept=".mp3" placeholder="select a .mp3 audio file" />
+    <h2 id="input-header">Add Audio FX To MP3 / WAV Files</h2>
+    <input id="audio-file-input" type="file" accept=".mp3, .wav" placeholder="select an .mp3 or .wav audio file" />
     <button id="audio-upload-btn">Upload .mp3 file</button>
     <audio id="main-audio" style="display: none"></audio>
     <h2 id="audio-url-header" style="display: none"></h2>
@@ -79,13 +79,13 @@
       </div>
     </div>
     <br />
-    <button id="play-pause-btn" style="display: none">Play .mp3</button>
+    <button id="play-pause-btn" style="display: none"></button>
     <h4 id="scrub-info-header" style="display: none">Drag to move around your audio:</h4>
     <input id="audio-scrub-input" style="display: none" type="range" value="0" />
     <br />
     <button id="render-audio-btn" style="display: none">Render Audio</button>
-    <h4 id="render-status-view" style="display: none">Rendering...</h4>
-    <a id="rendered-download" style="display: none">download your new .mp3</a>
+    <h4 id="render-status-view" style="display: none"></h4>
+    <a id="rendered-download" style="display: none"></a>
   </body>
   <script src="dist.bundle.js"></script>
 </html>

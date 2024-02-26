@@ -181,21 +181,21 @@ function unhideElements() {
 }
 function handleAudioUpload() {
     const uploadBtn = document.getElementById('audio-upload-btn');
-    uploadBtn.innerHTML = 'Upload new .mp3';
+    uploadBtn.innerHTML = 'Upload new .mp3 or .wav';
     const audioFileInput = document.getElementById('audio-file-input');
     if (audioFileInput && audioFileInput.files && audioFileInput.files.length > 0) {
         if (audioFileInput.files.length > 1) {
-            alert('Please select only one .mp3 file to edit.');
+            alert('Please select only one .mp3 or .wav file to edit.');
             audioFileInput.value = '';
             return;
         }
-        else if (!audioFileInput.files[0].name.endsWith('.mp3')) {
-            alert('Please select only .mp3 files to edit.');
+        else if (!audioFileInput.files[0].name.endsWith('.mp3') || !audioFileInput.files[0].name.endsWith(".wav")) {
+            alert('Please select only .mp3 or .wav files to edit.');
             audioFileInput.value = '';
             return;
         }
         const audioFile = audioFileInput.files[0];
-        curFname = audioFile.name;
+        curFname = audioFile.name.split(".")[0];
         const audioWebUrl = URL.createObjectURL(audioFile);
         audioElement = document.getElementById('main-audio');
         audioElement.src = audioWebUrl;
@@ -206,7 +206,7 @@ function handleAudioUpload() {
         preGain.connect(distNode);
         distNode.connect(highPass).connect(lowPass).connect(compressor).connect(masterGain).connect(audioCtx.destination);
         const urlHeader = document.getElementById('audio-url-header');
-        urlHeader.innerHTML = 'Current .mp3 File: ' + curFname;
+        urlHeader.innerHTML = 'Current .mp3 File: ' + audioFile.name;
         if (urlHeader.style.display === 'none') {
             unhideElements();
         }
@@ -263,8 +263,9 @@ function stringToUint8Array(str) {
 function handleRenderAudio() {
     return __awaiter(this, void 0, void 0, function* () {
         alert("Audio rendering started");
-        const renderStatus = document.getElementById("render-status-view");
-        renderStatus.style.display = "block";
+        const renderingStatus = document.getElementById("render-status-view");
+        renderingStatus.innerHTML = "Rendering to '" + curFname + "_fx.wav' ...";
+        renderingStatus.style.display = "block";
         const playPauseBtn = document.getElementById("play-pause-btn");
         playPauseBtn.style.display = "none";
         playPauseBtn.removeEventListener("click", handlePlayPause);
@@ -301,12 +302,12 @@ function handleRenderAudio() {
                 wavHeader.set(stringToUint8Array('data'), 36);
                 wavHeader.set(new Uint32Array([dataSize]), 40);
                 const wavBlob = new Blob([wavHeader, pcmBlob], { type: "audio/wav" });
+                renderingStatus.style.display = "none";
                 const renderedDownload = document.getElementById("rendered-download");
-                renderStatus.style.display = "none";
+                renderedDownload.innerHTML = "Click this link to download '" + curFname + "_fx.wav'";
                 renderedDownload.href = URL.createObjectURL(wavBlob);
                 renderedDownload.download = curFname + "_fx.wav";
                 renderedDownload.style.display = "block";
-                alert("ready to create download of rendered audio");
             }
         });
         mediaRecorder.start();
