@@ -20,6 +20,7 @@ let delayGain = undefined;
 let delayNode = undefined;
 let preGain = undefined;
 let audioElement = undefined;
+let curFname = "";
 let paused = true;
 document.getElementById('master-gain-slider').addEventListener('input', function () {
     const slider = document.getElementById('master-gain-slider');
@@ -194,6 +195,7 @@ function handleAudioUpload() {
             return;
         }
         const audioFile = audioFileInput.files[0];
+        curFname = audioFile.name;
         const audioWebUrl = URL.createObjectURL(audioFile);
         audioElement = document.getElementById('main-audio');
         audioElement.src = audioWebUrl;
@@ -204,7 +206,7 @@ function handleAudioUpload() {
         preGain.connect(distNode);
         distNode.connect(highPass).connect(lowPass).connect(compressor).connect(masterGain).connect(audioCtx.destination);
         const urlHeader = document.getElementById('audio-url-header');
-        urlHeader.innerHTML = 'Current .mp3 File: ' + audioFile.name;
+        urlHeader.innerHTML = 'Current .mp3 File: ' + curFname;
         if (urlHeader.style.display === 'none') {
             unhideElements();
         }
@@ -215,12 +217,7 @@ function handleAudioUpload() {
     }
     const playPauseBtn = document.getElementById("play-pause-btn");
     playPauseBtn.addEventListener("click", handlePlayPause);
-    document.addEventListener('keydown', function (event) {
-        if (event.key === ' ') {
-            event.preventDefault();
-            handlePlayPause();
-        }
-    });
+    document.addEventListener('keydown', docHandlePlayPause);
 }
 function updateScrubInput() {
     const scrubInput = document.getElementById('audio-scrub-input');
@@ -247,18 +244,31 @@ function handlePlayPause() {
     }
     paused = !paused;
 }
+function docHandlePlayPause(event) {
+    if (event.key === " ") {
+        event.preventDefault();
+        handlePlayPause();
+    }
+}
 function handleRecordEnd() {
     mediaRecorder.stop();
     alert("Audio rendering finished");
     const playPauseBtn = document.getElementById("play-pause-btn");
     playPauseBtn.style.display = "block";
 }
+function stringToUint8Array(str) {
+    const encoder = new TextEncoder();
+    return encoder.encode(str);
+}
 function handleRenderAudio() {
     return __awaiter(this, void 0, void 0, function* () {
         alert("Audio rendering started");
+        const renderStatus = document.getElementById("render-status-view");
+        renderStatus.style.display = "block";
         const playPauseBtn = document.getElementById("play-pause-btn");
         playPauseBtn.style.display = "none";
         playPauseBtn.removeEventListener("click", handlePlayPause);
+        document.removeEventListener("keydown", docHandlePlayPause);
         audioElement.currentTime = 0;
         const audioStream = audioCtx.createMediaStreamDestination().stream;
         mediaRecorder = new MediaRecorder(audioStream);
@@ -271,6 +281,31 @@ function handleRenderAudio() {
         };
         mediaRecorder.onstop = () => __awaiter(this, void 0, void 0, function* () {
             if (recordedChunks.length > 0) {
+                const pcmBlob = new Blob(recordedChunks, { type: "audio/wav" });
+                const wavHeader = new Uint8Array(44);
+                const dataSize = pcmBlob.size;
+                const totalSize = dataSize + 44 - 8;
+                wavHeader.set(stringToUint8Array('RIFF'), 0);
+                wavHeader.set(new Uint32Array([totalSize]), 4);
+                wavHeader.set(stringToUint8Array('WAVE'), 8);
+                wavHeader.set(stringToUint8Array('fmt '), 12);
+                wavHeader.set(new Uint32Array([16]), 16);
+                wavHeader.set(new Uint16Array([1]), 20);
+                wavHeader.set(new Uint16Array([1]), 22);
+                wavHeader.set(new Uint32Array([audioCtx.sampleRate]), 24);
+                const byteRate = audioCtx.sampleRate * 1 * 16 / 8;
+                wavHeader.set(new Uint32Array([byteRate]), 28);
+                const blockAlign = 1 * 16 / 8;
+                wavHeader.set(new Uint16Array([blockAlign]), 32);
+                wavHeader.set(new Uint16Array([16]), 34);
+                wavHeader.set(stringToUint8Array('data'), 36);
+                wavHeader.set(new Uint32Array([dataSize]), 40);
+                const wavBlob = new Blob([wavHeader, pcmBlob], { type: "audio/wav" });
+                const renderedDownload = document.getElementById("rendered-download");
+                renderStatus.style.display = "none";
+                renderedDownload.href = URL.createObjectURL(wavBlob);
+                renderedDownload.download = curFname + "_fx.wav";
+                renderedDownload.style.display = "block";
                 alert("ready to create download of rendered audio");
             }
         });
