@@ -293,7 +293,6 @@ async function handleRenderAudio() {
   };
   mediaRecorder.onstop = async () => {
     if (recordedChunks.length > 0) {
-      // combine recorded chunks into a single Blob
       const pcmBlob = new Blob(recordedChunks, { type: "audio/wav" });
       const wavHeader = new Uint8Array(44);
       const dataSize = pcmBlob.size;

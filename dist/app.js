@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var lamejs = require("lamejs");
 let audioCtx = undefined;
 let renderingCtx = undefined;
 let mediaRecorder = undefined;
@@ -265,55 +266,32 @@ function handleRenderAudio() {
     return __awaiter(this, void 0, void 0, function* () {
         alert("Audio rendering started");
         const renderingStatus = document.getElementById("render-status-view");
-        renderingStatus.innerHTML = "Rendering to '" + curFname + "_fx.wav' ...";
+        renderingStatus.innerHTML = "Rendering to '" + curFname + "_fx.mp3' ...";
         renderingStatus.style.display = "block";
         const playPauseBtn = document.getElementById("play-pause-btn");
         playPauseBtn.style.display = "none";
         playPauseBtn.removeEventListener("click", handlePlayPause);
         document.removeEventListener("keydown", docHandlePlayPause);
         audioElement.currentTime = 0;
-        const audioStream = audioCtx.createMediaStreamDestination().stream;
-        mediaRecorder = new MediaRecorder(audioStream);
-        audioElement.removeEventListener("ended", handleRecordEnd);
-        const recordedChunks = [];
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
-        mediaRecorder.onstop = () => __awaiter(this, void 0, void 0, function* () {
-            if (recordedChunks.length > 0) {
-                const pcmBlob = new Blob(recordedChunks, { type: "audio/wav" });
-                const wavHeader = new Uint8Array(44);
-                const dataSize = pcmBlob.size;
-                const totalSize = dataSize + 44 - 8;
-                wavHeader.set(stringToUint8Array('RIFF'), 0);
-                wavHeader.set(new Uint32Array([totalSize]), 4);
-                wavHeader.set(stringToUint8Array('WAVE'), 8);
-                wavHeader.set(stringToUint8Array('fmt '), 12);
-                wavHeader.set(new Uint32Array([16]), 16);
-                wavHeader.set(new Uint16Array([1]), 20);
-                wavHeader.set(new Uint16Array([1]), 22);
-                wavHeader.set(new Uint32Array([audioCtx.sampleRate]), 24);
-                const byteRate = audioCtx.sampleRate * 1 * 16 / 8;
-                wavHeader.set(new Uint32Array([byteRate]), 28);
-                const blockAlign = 1 * 16 / 8;
-                wavHeader.set(new Uint16Array([blockAlign]), 32);
-                wavHeader.set(new Uint16Array([16]), 34);
-                wavHeader.set(stringToUint8Array('data'), 36);
-                wavHeader.set(new Uint32Array([dataSize]), 40);
-                const wavBlob = new Blob([wavHeader, pcmBlob], { type: "audio/wav" });
+        renderingCtx = new OfflineAudioContext(2, audioCtx.sampleRate * audioElement.duration, audioCtx.sampleRate);
+        const audioSourceNode = audioCtx.createMediaElementSource(audioElement);
+        audioSourceNode.connect(preGain).connect(delayNode).connect(delayGain).connect(distNode);
+        preGain.connect(distNode);
+        distNode.connect(highPass).connect(lowPass).connect(compressor).connect(renderingCtx.destination);
+        renderingCtx.startRendering();
+        renderingCtx.oncomplete = function (event) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const audioData = event.renderedBuffer.getChannelData(0);
+                const mp3Blob = lamejs.encodeAudioToMp3(audioData);
                 renderingStatus.style.display = "none";
                 const renderedDownload = document.getElementById("rendered-download");
-                renderedDownload.innerHTML = "Click this link to download '" + curFname + "_fx.wav'";
-                renderedDownload.href = URL.createObjectURL(wavBlob);
-                renderedDownload.download = curFname + "_fx.wav";
+                renderedDownload.innerHTML = "Click this link to download '" + curFname + "_fx.mp3'";
+                renderedDownload.href = URL.createObjectURL(mp3Blob);
+                renderedDownload.download = curFname + "_fx.mp3";
                 renderedDownload.style.display = "block";
-            }
-        });
-        mediaRecorder.start();
+            });
+        };
         audioElement.play();
-        audioElement.addEventListener("ended", handleRecordEnd);
     });
 }
 window.onload = function () {
