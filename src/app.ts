@@ -319,7 +319,7 @@ async function handleRenderAudio() {
       renderedDownload.href = URL.createObjectURL(wavBlob);
       renderedDownload.download = curFname+"_fx.wav";
       renderedDownload.style.display = "block";
-      //TODO: output .wav file is 'nothing' but still valid .wav
+      //TODO: fix problem where output .wav file is 'nothing' but still valid .wav
     }
   };
   mediaRecorder.start();
