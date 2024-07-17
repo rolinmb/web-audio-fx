@@ -1,16 +1,8 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var lamejs = require("lamejs");
 let audioCtx = undefined;
-let renderingCtx = undefined;
+let audioSourceNode = undefined;
+let audioElement = undefined;
+let dest = undefined;
 let mediaRecorder = undefined;
 let masterGain = undefined;
 let compressor = undefined;
@@ -20,9 +12,9 @@ let distNode = undefined;
 let delayGain = undefined;
 let delayNode = undefined;
 let preGain = undefined;
-let audioElement = undefined;
 let curFname = "";
 let paused = true;
+let chunks = [];
 document.getElementById('master-gain-slider').addEventListener('input', function () {
     const slider = document.getElementById('master-gain-slider');
     let val = slider.valueAsNumber;
@@ -201,7 +193,7 @@ function handleAudioUpload() {
         audioElement = document.getElementById('main-audio');
         audioElement.src = audioWebUrl;
         audioElement.load();
-        const audioSourceNode = audioCtx.createMediaElementSource(audioElement);
+        audioSourceNode = audioCtx.createMediaElementSource(audioElement);
         audioSourceNode.connect(preGain);
         preGain.connect(delayNode).connect(delayGain).connect(distNode);
         preGain.connect(distNode);
@@ -252,47 +244,28 @@ function docHandlePlayPause(event) {
         handlePlayPause();
     }
 }
-function handleRecordEnd() {
-    mediaRecorder.stop();
-    alert("Audio rendering finished");
-    const playPauseBtn = document.getElementById("play-pause-btn");
-    playPauseBtn.style.display = "block";
-}
-function stringToUint8Array(str) {
-    const encoder = new TextEncoder();
-    return encoder.encode(str);
-}
 function handleRenderAudio() {
-    return __awaiter(this, void 0, void 0, function* () {
-        alert("Audio rendering started");
-        const renderingStatus = document.getElementById("render-status-view");
-        renderingStatus.innerHTML = "Rendering to '" + curFname + "_fx.mp3' ...";
-        renderingStatus.style.display = "block";
-        const playPauseBtn = document.getElementById("play-pause-btn");
-        playPauseBtn.style.display = "none";
-        playPauseBtn.removeEventListener("click", handlePlayPause);
-        document.removeEventListener("keydown", docHandlePlayPause);
-        audioElement.currentTime = 0;
-        renderingCtx = new OfflineAudioContext(2, audioCtx.sampleRate * audioElement.duration, audioCtx.sampleRate);
-        const audioSourceNode = audioCtx.createMediaElementSource(audioElement);
-        audioSourceNode.connect(preGain).connect(delayNode).connect(delayGain).connect(distNode);
-        preGain.connect(distNode);
-        distNode.connect(highPass).connect(lowPass).connect(compressor).connect(renderingCtx.destination);
-        renderingCtx.startRendering();
-        renderingCtx.oncomplete = function (event) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const audioData = event.renderedBuffer.getChannelData(0);
-                const mp3Blob = lamejs.encodeAudioToMp3(audioData);
-                renderingStatus.style.display = "none";
-                const renderedDownload = document.getElementById("rendered-download");
-                renderedDownload.innerHTML = "Click this link to download '" + curFname + "_fx.mp3'";
-                renderedDownload.href = URL.createObjectURL(mp3Blob);
-                renderedDownload.download = curFname + "_fx.mp3";
-                renderedDownload.style.display = "block";
-            });
-        };
-        audioElement.play();
-    });
+    chunks = [];
+    dest = new MediaStreamAudioDestinationNode(audioCtx);
+    mediaRecorder = new MediaRecorder(dest.stream);
+    masterGain.disconnect(audioCtx.destination);
+    masterGain.connect(dest);
+    mediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+    };
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+        const audioUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = audioUrl;
+        downloadLink.download = `${curFname}.ogg`;
+        downloadLink.innerText = "Download rendered audio";
+        document.body.appendChild(downloadLink);
+    };
+    mediaRecorder.start();
+    setTimeout(() => {
+        mediaRecorder.stop();
+    }, 600000);
 }
 window.onload = function () {
     audioCtx = new AudioContext();

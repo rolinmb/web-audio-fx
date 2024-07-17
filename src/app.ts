@@ -1,5 +1,7 @@
 let audioCtx: AudioContext | undefined = undefined;
-let renderingCtx: OfflineAudioContext | undefined = undefined;
+let audioSourceNode: MediaElementAudioSourceNode | undefined = undefined;
+let audioElement: HTMLAudioElement | undefined = undefined;
+let dest: MediaStreamAudioDestinationNode | undefined = undefined;
 let mediaRecorder: MediaRecorder | undefined = undefined;
 let masterGain: GainNode | undefined = undefined;
 let compressor: DynamicsCompressorNode | undefined = undefined;
@@ -9,9 +11,9 @@ let distNode: WaveShaperNode | undefined = undefined;
 let delayGain: GainNode | undefined = undefined;
 let delayNode: DelayNode | undefined = undefined;
 let preGain: GainNode | undefined = undefined;
-let audioElement: HTMLAudioElement | undefined = undefined;
 let curFname: string = "";
 let paused: boolean = true;
+let chunks: BlobPart[]= [];
 
 document.getElementById('master-gain-slider')!.addEventListener('input', function() {
   const slider = <HTMLInputElement> document.getElementById('master-gain-slider');
@@ -207,7 +209,7 @@ function handleAudioUpload() {
     audioElement = <HTMLAudioElement> document.getElementById('main-audio');
     audioElement.src = audioWebUrl;
     audioElement.load();
-    const audioSourceNode = audioCtx!.createMediaElementSource(audioElement);
+    audioSourceNode = audioCtx!.createMediaElementSource(audioElement);
     audioSourceNode.connect(preGain!);                                  
     preGain!.connect(delayNode!).connect(delayGain!).connect(distNode!);
     preGain!.connect(distNode!);
@@ -260,71 +262,28 @@ function docHandlePlayPause(event: KeyboardEvent) {
   }
 }
 
-function handleRecordEnd() {
-  mediaRecorder!.stop();
-  alert("Audio rendering finished");
-  const playPauseBtn = document.getElementById("play-pause-btn") as HTMLButtonElement;
-  playPauseBtn.style.display = "block";
-}
-
-function stringToUint8Array(str: string): Uint8Array {
-  const encoder = new TextEncoder();
-  return encoder.encode(str);
-}
-
-async function handleRenderAudio() {
-  alert("Audio rendering started");
-  const renderingStatus = document.getElementById("render-status-view") as HTMLHeadingElement;
-  renderingStatus.innerHTML = "Rendering to '" + curFname + "_fx.wav' ...";
-  renderingStatus.style.display = "block";
-  const playPauseBtn = document.getElementById("play-pause-btn") as HTMLButtonElement;
-  playPauseBtn.style.display = "none";
-  playPauseBtn.removeEventListener("click", handlePlayPause);
-  document.removeEventListener("keydown", docHandlePlayPause);
-  audioElement!.currentTime = 0;
-  const audioStream = audioCtx!.createMediaStreamDestination().stream;
-  mediaRecorder = new MediaRecorder(audioStream);
-  audioElement!.removeEventListener("ended", handleRecordEnd);
-  const recordedChunks: Blob[] = [];
+function handleRenderAudio() {
+  chunks = [];
+  dest = new MediaStreamAudioDestinationNode(audioCtx!);
+  mediaRecorder = new MediaRecorder(dest.stream);
+  masterGain!.disconnect(audioCtx!.destination);
+  masterGain!.connect(dest);
   mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      recordedChunks.push(event.data);
-    }
+    chunks.push(event.data);
   };
-  mediaRecorder.onstop = async () => {
-    if (recordedChunks.length > 0) {
-      const pcmBlob = new Blob(recordedChunks, { type: "audio/wav" });
-      const wavHeader = new Uint8Array(44);
-      const dataSize = pcmBlob.size;
-      const totalSize = dataSize + 44 - 8;
-      wavHeader.set(stringToUint8Array('RIFF'), 0);
-      wavHeader.set(new Uint32Array([totalSize]), 4);
-      wavHeader.set(stringToUint8Array('WAVE'), 8);
-      wavHeader.set(stringToUint8Array('fmt '), 12);
-      wavHeader.set(new Uint32Array([16]), 16);
-      wavHeader.set(new Uint16Array([1]), 20);
-      wavHeader.set(new Uint16Array([1]), 22);
-      wavHeader.set(new Uint32Array([audioCtx!.sampleRate]), 24);
-      const byteRate = audioCtx!.sampleRate * 1 * 16 / 8;
-      wavHeader.set(new Uint32Array([byteRate]), 28);
-      const blockAlign = 1 * 16 / 8;
-      wavHeader.set(new Uint16Array([blockAlign]), 32);
-      wavHeader.set(new Uint16Array([16]), 34);
-      wavHeader.set(stringToUint8Array('data'), 36);
-      wavHeader.set(new Uint32Array([dataSize]), 40);
-      const wavBlob = new Blob([wavHeader, pcmBlob], { type: "audio/wav" });
-      renderingStatus.style.display = "none";
-      const renderedDownload = document.getElementById("rendered-download") as HTMLAnchorElement;
-      renderedDownload.innerHTML = "Click this link to download '" + curFname + "_fx.wav'";
-      renderedDownload.href = URL.createObjectURL(wavBlob);
-      renderedDownload.download = curFname+"_fx.wav";
-      renderedDownload.style.display = "block";
-      //TODO: fix problem where output .wav file is 'nothing' but still valid .wav
-    }
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+    const audioUrl = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+    downloadLink.href = audioUrl;
+    downloadLink.download = `${curFname}.ogg`;
+    downloadLink.innerText = "Download rendered audio";
+    document.body.appendChild(downloadLink);
   };
   mediaRecorder.start();
-  audioElement!.play();
-  audioElement!.addEventListener("ended", handleRecordEnd);
+  setTimeout(() => {
+    mediaRecorder!.stop();
+  }, 600000);
 }
 
 window.onload = function() {
