@@ -262,29 +262,38 @@ function docHandlePlayPause(event: KeyboardEvent) {
   }
 }
 
-function handleRenderAudio() {
+function handleRenderAudio(): void {
   chunks = [];
   dest = new MediaStreamAudioDestinationNode(audioCtx!);
   mediaRecorder = new MediaRecorder(dest.stream);
-  masterGain!.disconnect(audioCtx!.destination);
+
+  // Connect masterGain to both the speakers and recorder
+  masterGain!.connect(audioCtx!.destination);
   masterGain!.connect(dest);
-  mediaRecorder.ondataavailable = (event) => {
+
+  mediaRecorder.ondataavailable = (event: BlobEvent) => {
     chunks.push(event.data);
   };
+
   mediaRecorder.onstop = () => {
     const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
     const audioUrl = URL.createObjectURL(blob);
+
     const downloadLink = document.createElement("a");
     downloadLink.href = audioUrl;
     downloadLink.download = `${curFname}.ogg`;
     downloadLink.innerText = "Download rendered audio";
     document.body.appendChild(downloadLink);
   };
+
   mediaRecorder.start();
+
+  // Stop recording after 10 minutes (600000 ms)
   setTimeout(() => {
     mediaRecorder!.stop();
   }, 600000);
 }
+
 
 window.onload = function() {
   audioCtx = new AudioContext();
