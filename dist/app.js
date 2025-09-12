@@ -248,8 +248,11 @@ function handleRenderAudio() {
     chunks = [];
     dest = new MediaStreamAudioDestinationNode(audioCtx);
     mediaRecorder = new MediaRecorder(dest.stream);
-    masterGain.disconnect(audioCtx.destination);
-    masterGain.connect(dest);
+
+    // Send final mix to both speakers and recorder
+    masterGain.connect(dest); // recorder
+    masterGain.connect(audioCtx.destination); // speakers
+
     mediaRecorder.ondataavailable = (event) => {
         chunks.push(event.data);
     };
@@ -262,11 +265,14 @@ function handleRenderAudio() {
         downloadLink.innerText = "Download rendered audio";
         document.body.appendChild(downloadLink);
     };
+
     mediaRecorder.start();
+
     setTimeout(() => {
         mediaRecorder.stop();
     }, 600000);
 }
+
 window.onload = function () {
     audioCtx = new AudioContext();
     masterGain = audioCtx.createGain();
